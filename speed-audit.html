@@ -300,7 +300,7 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
   <article class="fix">
     <header><span class="pill p-bad">3 · Срочно</span><h3>Показывать картинку-заставку сразу</h3></header>
     <p>Пока видео грузится, вместо него должна показываться красивая статичная картинка. Она уже есть на сайте, но из-за настройки «загружать позже» появляется с опозданием, и первые секунды посетитель видит тёмный экран.</p>
-    <div class="effect"><span>Эффект: первый экран появляется <b>на 2–3 секунды раньше</b></span><span>Кто делает: разработчик, 5 минут в Webflow</span></div>
+    <div class="effect"><span>Эффект: первый экран появляется <b>на 2–3 секунды раньше</b></span><span>Кто делает: разработчик</span></div>
     <details><summary>Технические детали для разработчика</summary>
       <ul>
         <li>Изображение <code>.bunny-bg__placeholder</code> (WebP, 100 КБ) стоит с <code>loading="lazy"</code>. В Webflow выставить Load: Eager и добавить атрибут <code>fetchpriority="high"</code>.</li>
@@ -350,13 +350,13 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
 
   <article class="fix">
     <header><span class="pill p-ok">7 · Для поисковиков</span><h3>Мелкие технические настройки для Google</h3></header>
-    <p>Это не про скорость, но проблемы нашлись попутно, и исправляются они быстро:</p>
+    <p>Это не про скорость, но проблемы нашлись попутно:</p>
     <ul>
       <li><b>Сайт доступен по двум адресам</b>, с www и без. Google может считать это двумя копиями одного сайта. Нужно выбрать основной адрес, а второй перенаправлять на него.</li>
       <li><b>Нет карты сайта</b> (sitemap) — списка страниц для Google. В Webflow она включается одной галочкой.</li>
       <li><b>37 главных заголовков на одной странице.</b> Главный заголовок должен быть один, остальные — подзаголовки. Внешне ничего не изменится.</li>
     </ul>
-    <div class="effect"><span>Кто делает: разработчик, 15–30 минут в Webflow</span></div>
+    <div class="effect"><span>Кто делает: разработчик</span></div>
     <details><summary>Технические детали для разработчика</summary>
       <ul>
         <li>www и apex отвечают 200 без 301, <code>rel="canonical"</code> нет. Publishing → Default domain.</li>
@@ -385,7 +385,7 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
   <h2>Как двигаться дальше</h2>
   <ol class="steps">
     <li>Пережать два видео (пункты 1–2) — даёт основной результат.</li>
-    <li>Внести настройки в Webflow (пункты 3–5 и 7) — разработчику примерно на один рабочий день.</li>
+    <li>Внести настройки в Webflow (пункты 3–5 и 7).</li>
     <li>Повторить замеры и сравнить с этим отчётом.</li>
     <li>Через 4 недели посмотреть данные реальных посетителей в Google Search Console (раздел «Основные интернет-показатели»).</li>
   </ol>
@@ -551,7 +551,7 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
   <article class="fix">
     <header><span class="pill p-bad">3 · Urgent</span><h3>Show the cover image right away</h3></header>
     <p>While the video loads, a still cover image should be shown in its place. The image already exists on the site, but a “load later” setting delays it, so for the first seconds visitors see a dark screen.</p>
-    <div class="effect"><span>Effect: first screen appears <b>2–3 seconds sooner</b></span><span>Who: developer, 5 minutes in Webflow</span></div>
+    <div class="effect"><span>Effect: first screen appears <b>2–3 seconds sooner</b></span><span>Who: developer</span></div>
     <details><summary>Technical details for the developer</summary>
       <ul>
         <li>The <code>.bunny-bg__placeholder</code> image (WebP, 100 KB) has <code>loading="lazy"</code>. In Webflow set Load: Eager and add the attribute <code>fetchpriority="high"</code>.</li>
@@ -601,13 +601,13 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
 
   <article class="fix">
     <header><span class="pill p-ok">7 · For search engines</span><h3>Small technical settings for Google</h3></header>
-    <p>These are not about speed, but they came up along the way and are quick to fix:</p>
+    <p>These are not about speed, but they came up along the way:</p>
     <ul>
       <li><b>The site is available at two addresses</b>, with and without www. Google may treat them as two copies of the same site. One address should be chosen as the main one, with the other redirecting to it.</li>
       <li><b>There is no sitemap</b>, the list of pages for Google. In Webflow it is turned on with one checkbox.</li>
       <li><b>37 main headings on one page.</b> There should be one main heading; the rest should be subheadings. Nothing will change visually.</li>
     </ul>
-    <div class="effect"><span>Who: developer, 15–30 minutes in Webflow</span></div>
+    <div class="effect"><span>Who: developer</span></div>
     <details><summary>Technical details for the developer</summary>
       <ul>
         <li>www and apex both return 200 with no 301, and there is no <code>rel="canonical"</code>. Publishing → Default domain.</li>
@@ -636,7 +636,7 @@ ffmpeg -i hero.mp4 -t 20 -an -vf "scale=-2:720,fps=25" -c:v libx264 -preset slow
   <h2>How to proceed</h2>
   <ol class="steps">
     <li>Re-encode the two videos (items 1–2). This gives the main result.</li>
-    <li>Apply the settings in Webflow (items 3–5 and 7). About one working day for a developer.</li>
+    <li>Apply the settings in Webflow (items 3–5 and 7).</li>
     <li>Repeat the measurements and compare them with this report.</li>
     <li>After 4 weeks, check real-visitor data in Google Search Console (the Core Web Vitals section).</li>
   </ol>
