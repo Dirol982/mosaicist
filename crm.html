@@ -189,6 +189,11 @@ details.plain>summary{cursor:pointer;list-style:revert}
 .mini ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:2px;font-size:13px}
 .mini li.ok{color:var(--muted)}
 @media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.toast{display:flex;gap:12px;align-items:center}
+.toast-go{border:1px solid var(--bg);background:transparent;color:var(--bg);border-radius:5px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+@keyframes flash{0%,60%{box-shadow:inset 0 0 0 2px var(--ink);background:var(--sunk)}100%{box-shadow:none}}
+.task.flash{animation:flash 2.4s ease-out}
+@media (prefers-reduced-motion:reduce){.task.flash{animation:none;box-shadow:inset 0 0 0 2px var(--ink)}}
 </style>
 
 <div class="app">
@@ -282,7 +287,19 @@ details.plain>summary{cursor:pointer;list-style:revert}
 
   const $=id=>document.getElementById(id);
   function h(tag,attrs,...kids){const e=document.createElement(tag);for(const k in (attrs||{})){const v=attrs[k];if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v);}for(const c of kids.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(String(c)));}return e;}
-  function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200);}
+  function toast(msg,ids){const t=$("toast");t.replaceChildren(h("span",{text:msg}));
+    if(ids&&ids.length)t.append(h("button",{type:"button",class:"toast-go",onclick:()=>{t.hidden=true;jumpTo(ids);}},"Показать →"));
+    t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,ids&&ids.length?7000:3200);}
+  // Перейти к незавершённым задачам: снять фильтр, прокрутить к первой и подсветить все
+  function jumpTo(ids){
+    const st=new Set(ids);if(tasks.some(t=>st.has(t.id)&&!document.getElementById("t-"+t.id)))filter="all";
+    const first=tasks.find(t=>t.id===ids[0]);if(first&&first.site!==selected){selected=first.site;studioAll=false;}
+    render();
+    requestAnimationFrame(()=>{const els=ids.map(id=>document.getElementById("t-"+id)).filter(Boolean);if(!els.length)return;
+      els[0].scrollIntoView({behavior:"smooth",block:"center"});
+      els.forEach(e=>{e.classList.remove("flash");void e.offsetWidth;e.classList.add("flash");});
+      const cb=els[0].querySelector("input[type=checkbox],button");if(cb)cb.focus({preventScroll:true});});
+  }
   function today(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
   function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
   function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
@@ -414,16 +431,17 @@ details.plain>summary{cursor:pointer;list-style:revert}
   function reviewBlock(t){
     const st=siteTasks(t.site),same=x=>x.fw===t.fw&&x.gate===t.gate&&x.id!==t.id&&(x.cycle||"")===(t.cycle||"");
     const open=st.filter(x=>same(x)&&!x.done&&!x.review);
-    if(open.length)return {hard:true,msg:`Сначала закройте задачи гейта: открыто ${open.length}`};
+    const ord=l=>l.sort((a,b)=>a.fw-b.fw||a.gate-b.gate||String(a.due||"9").localeCompare(String(b.due||"9"))).map(x=>x.id);
+    if(open.length)return {hard:true,msg:`Сначала закройте задачи гейта: открыто ${open.length}`,ids:ord(open)};
     const p1=st.filter(x=>x.fw===1&&x.prio==="P1"&&!x.done);
-    if(t.fw===1&&t.gate===3&&p1.length)return {hard:true,msg:`Гейт 3 закрывается, когда выполнены все P1: открыто ${p1.length}`};
-    if(t.fw===2&&t.gate===2&&p1.length)return {hard:true,msg:`Страницы публикуются, когда в Ф1 нет открытых P1: открыто ${p1.length}`};
+    if(t.fw===1&&t.gate===3&&p1.length)return {hard:true,msg:`Гейт 3 закрывается, когда выполнены все P1: открыто ${p1.length}`,ids:ord(p1)};
+    if(t.fw===2&&t.gate===2&&p1.length)return {hard:true,msg:`Страницы публикуются, когда в Ф1 нет открытых P1: открыто ${p1.length}`,ids:ord(p1)};
     if(me&&st.some(x=>same(x)&&x.doneBy===me))return {hard:false,msg:"Принцип «четырёх глаз»: вы закрывали задачи этого гейта. Нажмите ещё раз, чтобы всё равно подтвердить"};
     return null;
   }
   function setDone(t,val){
     let override=false;
-    if(val&&t.review){const b=reviewBlock(t);if(b){if(b.hard||overrideArm!==t.id){toast(b.msg);if(!b.hard){overrideArm=t.id;setTimeout(()=>{if(overrideArm===t.id)overrideArm=null;},6000);}render();return;}override=true;overrideArm=null;}}
+    if(val&&t.review){const b=reviewBlock(t);if(b){if(b.hard||overrideArm!==t.id){toast(b.msg,b.ids);if(!b.hard){overrideArm=t.id;setTimeout(()=>{if(overrideArm===t.id)overrideArm=null;},6000);}render();return;}override=true;overrideArm=null;}}
     const data=val?{done:true,doneAt:nowISO(),doneBy:me||(DEMO?"team":"")}:{done:false,doneAt:"",doneBy:""};
     write(async()=>{await db.doc("tasks/"+t.id).update(data);if(!val&&t.mark&&t.mark.done)await db.doc("studio/"+t.id).set({...t.mark,done:false});})
       .then(ok=>{if(ok)log(t.site,override?"review_override":val?"done":"reopened",{task:t.id,title:t.title});});
@@ -434,7 +452,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
     const s=status(t),isDel=pendingDelete===t.id;
     const closed=t.done&&t.doneAt?h("span",{class:"closed",text:(t.byStudio?"Студия · ":"Закрыто ")+fmtStamp(t.doneAt)+(t.doneBy&&!t.byStudio?" · "+who(t.doneBy):"")}):null;
     const th=thread(t,"team");
-    return h("div",{class:"task "+s.c},
+    return h("div",{class:"task "+s.c,id:"t-"+t.id},
       h("input",{type:"checkbox",checked:t.done,"aria-label":"Выполнено: "+t.title,onchange:e=>setDone(t,e.target.checked)}),
       h("div",{class:"body"},h("span",{class:"title",text:t.title}),
         h("span",{class:"info"},h("button",{class:"prio "+(t.prio||""),type:"button",title:"Приоритет: нажмите, чтобы сменить","aria-label":"Приоритет "+(t.prio||"не задан"),onclick:()=>cyclePrio(t)},t.prio||"P–"),
@@ -603,7 +621,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
     const team=t.done&&!t.byStudio;
     const act=t.done?(team?h("span",{class:"muted",text:"Закрыто подрядчиком"}):(canWrite?h("button",{class:"btn ghost sm",type:"button",onclick:()=>studioAct(t,false)},"Вернуть"):null))
       :(canWrite?h("button",{class:"btn sm",type:"button",onclick:()=>studioAct(t,true)},t.approval?"Утвердить":"Готово"):null);
-    return h("div",{class:"task "+s.c},
+    return h("div",{class:"task "+s.c,id:"t-"+t.id},
       h("i",{class:"dot "+(s.c==="done"?"grey":s.c),style:"margin-top:6px"}),
       h("div",{class:"body"},h("span",{class:"title",text:t.title}),
         h("span",{class:"info"},showSite&&site?h("b",{text:site.name}):null,t.approval?h("span",{class:"rev appr",text:"Утверждение"}):null,h("span",{class:"status "+s.c,text:s.label}),
