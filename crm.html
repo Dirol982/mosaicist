@@ -101,6 +101,7 @@ h3{margin:0;font-size:13px;font-weight:600}
 .icon{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--muted)}
 .icon.on{border-color:var(--red);color:var(--red);background:var(--red-bg)}
 .icon.danger{color:var(--red)}
+.btn.danger{color:var(--red);border-color:var(--red)}
 .add{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:0 0 10px 10px}
 .form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .form input[type=text],.form input[type=url],.form select,.form input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;min-width:0}
@@ -239,7 +240,7 @@ h3{margin:0;font-size:13px;font-weight:600}
     p_created:"создал(а) проект",p_paused:"поставил(а) проект на паузу",p_active:"вернул(а) проект в работу",p_done:"завершил(а) проект",p_archived:"отправил(а) проект в архив",p_edited:"изменил(а) карточку проекта",prio:"изменил(а) приоритет",cycle:"создал(а) задачи месяца",review_override:"закрыл(а) проверку без «четырёх глаз»"};
   const RANK={red:3,orange:2,green:1,paused:0,done:0};
   let db=null,user=null,me=null,names={},asked=new Set();
-  let sites=[],tasks=[],history=[],overrideArm=null,regOpen=null,selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
+  let sites=[],tasks=[],history=[],overrideArm=null,regOpen=null,delArm=null,selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
   try{ selected=localStorage.getItem("crm-site"); tab=localStorage.getItem("crm-tab")||"active"; }catch(e){}
 
   const $=id=>document.getElementById(id);
@@ -359,6 +360,8 @@ h3{margin:0;font-size:13px;font-weight:600}
     if(ps==="active"){btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=!pausing;editing=false;render();}},"Пауза"),h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"done")},"Завершить"));}
     else{btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"active",{pauseNote:""})},"Вернуть в работу"));}
     if(ps!=="archived")btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"archived")},"В архив"));
+    else btns.push(delArm===s.id?h("button",{class:"btn ghost danger",type:"button",onclick:()=>deleteProject(s)},"Удалить навсегда?")
+      :h("button",{class:"btn ghost",type:"button",title:"Удалить проект вместе с задачами и историей",onclick:()=>{delArm=s.id;render();setTimeout(()=>{if(delArm===s.id){delArm=null;render();}},5000);}},"Удалить"));
     if(ps==="active")btns.push(h("button",{class:"btn ghost",type:"button",title:"Задачи ежемесячного цикла по уровню проекта. До 5-го числа — на текущий месяц, позже — на следующий",onclick:()=>monthTasks(s)},"+ Задачи месяца"));
     btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{editing=!editing;pausing=false;render();}},editing?"Закрыть":"Изменить"));
     const head=h("div",{class:"site-head"},
@@ -417,6 +420,11 @@ h3{margin:0;font-size:13px;font-weight:600}
     const last=new Date(y,m+1,0).getDate();
     write(async()=>{for(const [fw,title,owner,day,rev] of list){await db.collection("tasks").add({site:s.id,fw,gate:5,title:pre+title,owner,due:iso(new Date(y,m,Math.min(day,last))),flag:false,prio:"",review:!!rev,cycle:key,done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()});}
       log(s.id,"cycle",{title:s.name,detail:pre.replace(" · ","")});},"Созданы задачи: "+pre.replace(" · ",""));
+  }
+  function deleteProject(s){
+    delArm=null;const st=siteTasks(s.id),ev=history.filter(e=>e.site===s.id);
+    write(async()=>{for(const t of st)await db.doc("tasks/"+t.id).delete();for(const e of ev)await db.doc("history/"+e.id).delete();await db.doc("sites/"+s.id).delete();
+      selected=null;try{localStorage.removeItem("crm-site");}catch(e){}},`Проект ${s.name} удалён`);
   }
   function historyBlock(s){
     const ev=history.filter(e=>e.site===s.id).slice(0,40);
