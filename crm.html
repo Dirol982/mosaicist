@@ -194,6 +194,33 @@ details.plain>summary{cursor:pointer;list-style:revert}
 @keyframes flash{0%,60%{box-shadow:inset 0 0 0 2px var(--ink);background:var(--sunk)}100%{box-shadow:none}}
 .task.flash{animation:flash 2.4s ease-out}
 @media (prefers-reduced-motion:reduce){.task.flash{animation:none;box-shadow:inset 0 0 0 2px var(--ink)}}
+.title.link{all:unset;cursor:pointer;overflow-wrap:anywhere}
+.title.link:hover{text-decoration:underline;text-underline-offset:3px}
+.title.link:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
+.task.done .title.link{text-decoration:line-through;color:var(--muted)}
+dialog.dlg{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);padding:0;width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto}
+dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
+.dlg>*{padding-left:20px;padding-right:20px}
+.dlg-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-top:18px;position:sticky;top:0;background:var(--surface);padding-bottom:8px;z-index:1}
+.dlg-head h2{font-size:19px;line-height:1.3;overflow-wrap:anywhere}
+.dlg-crumbs{font-size:12px;margin-bottom:4px}
+.dlg-badges{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:10px}
+.kvs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.kv{display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:0}
+.kv .k,.dlg .k{font-size:11px;color:var(--muted)}
+.dlg-sec{padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.dlg-sec h3{font-size:13px}
+.dlg-sec>summary{cursor:pointer;font-weight:600;font-size:13px}
+.dlg-sec.internal{background:var(--sunk)}
+.desc{white-space:pre-wrap;margin:0;font-size:14px;line-height:1.55}
+.dlg .row{display:flex;gap:8px;flex-wrap:wrap}
+.dlg .stack{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.dlg .stack textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
+.dlg details.edit summary{cursor:pointer;font-size:12px;color:var(--ink)}
+.dlg .thread{margin-top:0}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:14px;padding-bottom:18px;position:sticky;bottom:0;background:var(--surface)}
+@media (max-width:520px){dialog.dlg{width:100vw;max-width:100vw;max-height:100vh;height:100vh;border-radius:0;margin:0}}
+.gate .p.hold{color:var(--orange)}
 </style>
 
 <div class="app">
@@ -220,10 +247,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
           <input id="sf-platform" type="text" placeholder="Платформа" value="Webflow" aria-label="Платформа">
         </div>
         <input id="sf-segment" type="text" placeholder="Сегмент и рынок, например люкс, США">
-        <div class="two">
-          <input id="sf-executor" type="text" placeholder="Исполнитель" aria-label="Исполнитель">
-          <input id="sf-reviewer" type="text" placeholder="Проверяющий" aria-label="Проверяющий">
-        </div>
+        <input id="sf-executor" type="text" placeholder="Ответственный у подрядчика" aria-label="Ответственный у подрядчика">
         <label class="lbl" for="sf-start">Дата старта</label>
         <input id="sf-start" type="date">
         <label class="chk"><input id="sf-template" type="checkbox" checked> Добавить типовые задачи по гейтам</label>
@@ -236,6 +260,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
   <p class="muted" id="conn" style="margin:0;font-size:12px"></p>
 </div>
 <div class="toast" id="toast" hidden></div>
+<dialog class="dlg" id="task-dlg" aria-labelledby="dlg-title"></dialog>
 
 <script>
 (function(){
@@ -244,45 +269,94 @@ details.plain>summary{cursor:pointer;list-style:revert}
     2:{name:"Фреймворк 2 · SEO-продвижение", gates:["Сайт в продвижении","Семантика утверждена","Структура запущена","Контент и AI","Первый результат","Ежемесячный цикл"]}
   };
   // [фреймворк, гейт, название, ответственный, день от старта, проверка гейта, утверждение студией]
+  // [фреймворк, гейт, название, ответственный, день от старта, —, утверждение студией]
   function template(level){
-    const A=level==="A",C=level==="C",ai=A?10:C?3:5;
+    const A=level==="A",C=level==="C",ai=A?10:C?3:5,P="Подрядчик",S="Студия";
     return [
-      [1,0,"Доступы от студии: CMS, хостинг видео, Search Console, Google Analytics","Студия",2],[1,0,"Контакт в студии и границы работ","Студия",2],[1,0,"Резервная копия сайта","Тех. специалист",3],
-      [1,1,"Замеры: главная + 5 страниц, телефон и компьютер, медиана из 3 прогонов","Тех. специалист",7],[1,1,"Обход адресов и чек-лист аудита на 100%","SEO-специалист",7],
-      [1,1,"Приоритеты P1–P3 по находкам, флаги по порогам","SEO-специалист",8],[1,1,"Проверка гейта 1 по критериям","Проверяющий",9,1],[1,1,"Отчёт аудита для студии","Менеджер",10],
-      [1,2,"Студия утвердила план задач и пороги","Студия",14,0,1],[1,2,"Материалы и решения от студии для P1","Студия",14],
-      [1,3,"Все задачи P1 на тестовой версии","Тех. специалист",28],[1,3,"Тестовая версия: метрики в порогах, визуальное сравнение, редиректы, 0 битых ссылок, разметка без ошибок","Тех. специалист",29],
-      [1,3,"Проверка гейта 3 по критериям","Проверяющий",30,1],[1,3,"Студия посмотрела тестовую версию и дала добро на публикацию","Студия",31,0,1],
-      [1,4,"Повторные замеры на боевом сайте","Тех. специалист",33],[1,4,"Карта сайта отправлена в Search Console","SEO-специалист",33],[1,4,"Отчёт «было / стало» для студии","Менеджер",35],
-      [1,4,"Студия приняла результат по отчёту «было / стало»","Студия",37,0,1],
-      [1,5,"Контроль через 30 дней: регрессии, индексация, склейка адресов","Тех. специалист",64],[1,5,"Проверка гейта 5","Проверяющий",65,1],
-      [2,0,"Ниша, сегмент, рынок, язык и исключения заказчика","Студия",15],[2,0,"Точка отсчёта: показы, клики, страницы в индексе","Аналитик",16],
-      [2,0,`Базовый тест AI: ${ai} запросов в ChatGPT, Gemini, Perplexity`,"Аналитик",16],
-      [2,1,A?"Индивидуальное семантическое ядро":"Типовое ядро ниши + адаптация","SEO-специалист",25],[2,1,"Группы запросов закреплены за страницами, минус-слова, приоритеты","SEO-специалист",25],
-      [2,1,"Проверка гейта 1","Проверяющий",27,1],...(A?[[2,1,"Ядро утверждено студией","Студия",30,0,1]]:[]),
-      [2,2,"Страницы приоритета 1 по стандартам контента","Автор контента",45],[2,2,"Внутренние ссылки и отправка новых страниц на индексацию","SEO-специалист",46],[2,2,"Проверка гейта 2","Проверяющий",47,1],
-      [2,3,"Факты о компании и фото проектов от заказчика","Студия",50],
-      ...(C?[]:[[2,3,"Блог и первые статьи по плану","Автор контента",60]]),[2,3,"FAQ и блок фактов о компании","Автор контента",60],
-      [2,3,"Структурированные данные по типам страниц; Google Business Profile, если бизнес локальный","SEO-специалист",62],[2,3,"Контент-план на 3 месяца","SEO-специалист",62],[2,3,"Проверка гейта 3","Проверяющий",64,1],
-      [2,4,"Отчёт за 90 дней после гейта 2","Аналитик",137],[2,4,"Студия приняла отчёт за 90 дней","Студия",140,0,1]
+      [1,0,"Доступы от студии: CMS, хостинг видео, Search Console, Google Analytics",S,2],[1,0,"Контакт в студии и границы работ",S,2],[1,0,"Резервная копия сайта",P,3],
+      [1,1,"Замеры: главная + 5 страниц, телефон и компьютер, медиана из 3 прогонов",P,7],[1,1,"Обход адресов и чек-лист аудита на 100%",P,7],
+      [1,1,"Приоритеты P1–P3 по находкам, флаги по порогам",P,8],[1,1,"Отчёт аудита для студии",P,10],
+      [1,2,"Студия утвердила план задач и пороги",S,14,0,1],[1,2,"Материалы и решения от студии для P1",S,14],
+      [1,3,"Все задачи P1 на тестовой версии",P,28],[1,3,"Тестовая версия: метрики в порогах, визуальное сравнение, редиректы, 0 битых ссылок, разметка без ошибок",P,29],
+      [1,3,"Студия посмотрела тестовую версию и дала добро на публикацию",S,31,0,1],
+      [1,4,"Повторные замеры на боевом сайте",P,33],[1,4,"Карта сайта отправлена в Search Console",P,33],[1,4,"Отчёт «было / стало» для студии",P,35],
+      [1,4,"Студия приняла результат по отчёту «было / стало»",S,37,0,1],
+      [1,5,"Контроль через 30 дней: регрессии, индексация, склейка адресов",P,64],
+      [2,0,"Ниша, сегмент, рынок, язык и исключения заказчика",S,15],[2,0,"Точка отсчёта: показы, клики, страницы в индексе",P,16],
+      [2,0,`Базовый тест AI: ${ai} запросов в ChatGPT, Gemini, Perplexity`,P,16],
+      [2,1,A?"Индивидуальное семантическое ядро":"Типовое ядро ниши + адаптация",P,25],[2,1,"Группы запросов закреплены за страницами, минус-слова, приоритеты",P,25],
+      ...(A?[[2,1,"Ядро утверждено студией",S,30,0,1]]:[]),
+      [2,2,"Страницы приоритета 1 по стандартам контента",P,45],[2,2,"Внутренние ссылки и отправка новых страниц на индексацию",P,46],
+      [2,3,"Факты о компании и фото проектов от заказчика",S,50],
+      ...(C?[]:[[2,3,"Блог и первые статьи по плану",P,60]]),[2,3,"FAQ и блок фактов о компании",P,60],
+      [2,3,"Структурированные данные по типам страниц; Google Business Profile, если бизнес локальный",P,62],[2,3,"Контент-план на 3 месяца",P,62],
+      [2,4,"Отчёт за 90 дней после гейта 2",P,137],[2,4,"Студия приняла отчёт за 90 дней",S,140,0,1]
     ];
   }
   const LEVEL={A:{art:4,upd:2,ai:10},B:{art:2,upd:0,ai:5},C:{art:0,upd:0,ai:3}};
-  const REG=[["executor","Исполнитель"],["reviewer","Проверяющий"],["contact","Контакт в студии"],["media","Хостинг медиа"],["niche","Ниша"],["market","Рынок и язык"],["exclusions","Чего заказчик не делает"],
+  const REG=[["executor","Ответственный у подрядчика"],["contact","Контакт в студии"],["media","Хостинг медиа"],["niche","Ниша"],["market","Рынок и язык"],["exclusions","Чего заказчик не делает"],
     ["score","Оценка телефона, до → сейчас",1],["lcp","LCP телефона, до → сейчас",1],["weight","Вес главной, до → сейчас",1],["nextCheck","Следующая проверка"],["failReason","Причина, если гейт не пройден"]];
   const REG_KEYS=REG.flatMap(([k,,p])=>p?[k+"Before",k+"Now"]:[k]);
-  const OWNERS=["Менеджер","Тех. специалист","SEO-специалист","Автор контента","Аналитик","Проверяющий","Студия"];
+  const OWNERS=["Подрядчик","Студия"];
+  const ownerOf=o=>o==="Студия"?"Студия":"Подрядчик";
   const PSTATUS={active:"В работе",paused:"На паузе",done:"Завершён",archived:"Архив"};
   const ACTIONS={done:"закрыл(а) задачу",reopened:"вернул(а) в работу задачу",flag:"поставил(а) флаг",unflag:"снял(а) флаг",due:"изменил(а) срок",created:"добавил(а) задачу",deleted:"удалил(а) задачу",
     p_created:"создал(а) проект",p_paused:"поставил(а) проект на паузу",p_active:"вернул(а) проект в работу",p_done:"завершил(а) проект",p_archived:"отправил(а) проект в архив",p_edited:"изменил(а) карточку проекта",
-    prio:"изменил(а) приоритет",cycle:"создал(а) задачи месяца",review_override:"закрыл(а) проверку без «четырёх глаз»",studio_done:"студия: выполнено",studio_approved:"студия: утверждено",studio_undo:"студия: вернула в работу",comment:"комментарий к задаче"};
+    prio:"изменил(а) приоритет",cycle:"создал(а) задачи месяца",studio_done:"студия: выполнено",studio_approved:"студия: утверждено",studio_undo:"студия: вернула в работу",comment:"комментарий к задаче"};
   const RANK={red:3,orange:2,green:1,paused:0,done:0};
+  // Описания по умолчанию: что именно нужно по типовым задачам (если у задачи нет своего описания)
+  const GATE_CRIT={
+    "1-0":"От студии получены доступы к CMS, хостингу видео и Search Console; известны контактное лицо и границы работ; резервная копия сделана; сайт заведён в реестр.",
+    "1-2":"Студия утвердила список задач и оценку; целевые пороги зафиксированы; от студии получены материалы и решения, нужные для P1.",
+    "1-4":"Повторные замеры на боевом сайте по той же методике; цели достигнуты или отклонение объяснено; карта сайта отправлена в Search Console; отчёт «было / стало» принят студией.",
+    "2-0":"Назначен уровень A/B/C; в карточке есть ниша, сегмент, рынок, язык и исключения заказчика; есть доступ к Search Console и Google Analytics; снята точка отсчёта.",
+    "2-4":"KPI раннего этапа достигнуты или есть план коррекции; отчёт за 90 дней принят студией.",
+    "1-1":"Замеры главной и 5+ ключевых страниц (телефон и компьютер, медиана из 3 прогонов); обход всех адресов; чек-лист аудита заполнен на 100%; у каждой находки приоритет P1–P3.",
+    "1-3":"Все P1 выполнены; на тестовой версии метрики в целевых порогах; визуальное сравнение с текущим сайтом без расхождений; редиректы проверены; 0 битых внутренних ссылок; разметка без ошибок в Rich Results Test; студия посмотрела тестовую версию.",
+    "1-5":"Нет регрессий по скорости; в Search Console нет новых ошибок индексации; старые адреса склеены с новыми; полевые данные показывают улучшение или накапливаются.",
+    "2-1":"Ядро собрано (A — индивидуальное, B и C — типовое ядро ниши с адаптацией); каждая группа запросов закреплена за одной страницей; минус-слова составлены; приоритеты 1–3 расставлены.",
+    "2-2":"В Ф1 нет открытых P1; все страницы приоритета 1 созданы или обновлены по стандартам контента; title, description, H1 и alt в порогах; есть внутренние ссылки на новые страницы; новые страницы отправлены на индексацию.",
+    "2-3":"Для уровней A и B создан блог и опубликованы первые статьи; есть FAQ и блок фактов о компании; структурированные данные покрывают типы страниц; Google Business Profile подтверждён, если бизнес локальный.",
+    "2-5":"Все задачи месяца по уровню выполнены; красные флаги разобраны; план на следующий месяц утверждён."};
+  const DESC=[
+    [/^Доступы от студии|^Доступ к Webflow/,"Что нужно передать:\n• CMS — доступ к проекту сайта с правом публикации на тестовый адрес.\n• Хостинг видео — доступ или исходные файлы роликов.\n• Google Search Console — полный доступ для почты подрядчика.\n• Google Analytics — роль «Редактор».\n\nЕсли Search Console или Analytics не подключены — напишите в комментарии, подключим с вашего согласия. Владельцем остаётся студия или заказчик. Пока доступов нет, аудит не начинается."],
+    [/^Доступ к хранилищу видео/,"Доступ к сервису, где хранятся видео сайта, или исходные файлы роликов. Нужен, чтобы пережать тяжёлые видео без потери качества."],
+    [/^Доступ к Google Search Console/,"Полный доступ к ресурсу сайта в Google Search Console для почты подрядчика. Если ресурса нет — напишите в комментарии, подключим с вашего согласия."],
+    [/^Доступ к Google Analytics/,"Роль «Редактор» в Google Analytics. Если аналитика не установлена — напишите в комментарии, предложим настройку."],
+    [/^Контакт в студии/,"Кто со стороны студии отвечает за этот сайт (имя и способ связи) и что входит в работу: только оптимизация или оптимизация и продвижение, какие разделы сайта трогать нельзя."],
+    [/утвердила план задач/,"Посмотрите отчёт аудита (раздел «Отчёты»): план задач с приоритетами P1–P3 и целевые пороги скорости. Если согласны — нажмите «Утвердить». Вопросы и правки — в комментарии. Без утверждения внедрение не начинается."],
+    [/^Материалы и решения от студии/,"Для задач P1 нужны решения и материалы:\n• основной адрес сайта — с www или без;\n• исходники видео и изображений от заказчика;\n• допустимая длина роликов первого экрана;\n• можно ли менять адреса страниц (со старых будет перенаправление).\n\nОтветьте в комментарии по каждому пункту."],
+    [/^Решение: основной адрес/,"Сайт открывается по двум адресам — с www и без. Нужно выбрать один основной, второй будет перенаправлять на него. Для поиска это одна страница вместо двух. Напишите выбор в комментарии."],
+    [/^Решение: длина главного видео/,"Главное видео длинное и тяжёлое. Предлагаем сократить его до 15–25 секунд: так оно загружается быстрее, а смысл сохраняется. Нужно согласие заказчика."],
+    [/^Исходники видео/,"Исходные файлы видео в максимальном качестве — как снимали или монтировали. Из них сделаем лёгкие версии для сайта."],
+    [/^Решение: где основная версия/,"Тексты проектов совпадают с другим сайтом заказчика, и поиск считает их дублями. Нужно решить, на каком сайте основная версия; на другом тексты перепишем или сошлёмся на основной."],
+    [/дала добро на публикацию/,"Посмотрите тестовую версию сайта — ссылку подрядчик пришлёт в комментарии. Внешний вид не меняется: меняются скорость и техническая часть. Если всё в порядке — «Утвердить», и изменения выйдут на основном сайте."],
+    [/приняла результат по отчёту/,"Посмотрите отчёт «было / стало» (раздел «Отчёты»): те же замеры до и после, что сделано и что осталось. Если результат принят — «Утвердить»."],
+    [/^Ниша, сегмент|^Уточнить у студии уровень|^Исключения заказчика/,"Нужно для продвижения:\n• уровень обслуживания A, B или C — что продано заказчику;\n• ниша и сегмент, например люкс;\n• рынок и язык сайта;\n• чего заказчик не делает — такие запросы исключим из семантики."],
+    [/^Ядро утверждено/,"Посмотрите семантическое ядро (раздел «Отчёты»): по каким запросам продвигаем сайт и какие страницы под них. Если согласны — «Утвердить», правки — в комментарии."],
+    [/^Факты о компании/,"Для страниц, FAQ и ответов AI-ассистентов нужны факты от заказчика: год основания, основатель, награды, партнёры, адреса и телефоны, фото проектов, можно ли показывать цены. Только то, что можно публиковать."],
+    [/приняла отчёт за 90 дней/,"Отчёт за 90 дней: показы, клики, страницы в индексе и ответы AI в сравнении с точкой отсчёта. Если отчёт принят — «Утвердить»."],
+    [/Ответы студии на вопросы/,"Ответьте на вопросы из ежемесячного отчёта: какие нужны материалы, решения и доступы на следующий месяц."],
+    [/^Резервная копия/,"Полная резервная копия сайта до любых изменений. Отметьте в заметке, где она лежит."],
+    [/^Замеры/,"Lighthouse по главной и 5+ ключевым страницам, телефон и компьютер, медиана из 3 прогонов. Пороги и красные флаги — в Фреймворке 1."],
+    [/^Обход адресов/,"Чек-лист аудита из Фреймворка 1: скорость и медиа, индексация и адреса, разметка страниц, готовность к AI-поиску, аналитика."],
+    [/^Приоритеты P1/,"Каждой находке — приоритет P1–P3. Превышение красного порога — флаг и P1."],
+    [/^Отчёт аудита/,"Замеры, находки с приоритетами, технические решения и список задач с оценкой. Ссылку добавьте в «Отчёты для студии» в карточке проекта."],
+    [/^Тестовая версия:/,"Перед проверкой гейта: метрики на тестовой версии в целевых порогах, визуальное сравнение с текущим сайтом, редиректы, 0 битых ссылок, разметка без ошибок. Ссылку на тестовую версию — студии в комментарии к задаче «добро на публикацию»."],
+    [/^Карта сайта отправлена/,"Отправить sitemap.xml в Search Console после публикации и проверить, что он принят без ошибок."],
+    [/^Отчёт «было \/ стало»/,"Те же замеры до и после по той же методике, что сделано и что осталось (P2–P3). Ссылку добавьте в «Отчёты для студии»."]
+  ];
+  function descOf(t){
+    if(t.desc)return t.desc;
+    const m=DESC.find(([re])=>re.test(t.title||""));return m?m[1]:"";
+  }
+
   const DEMO=!(window.claude&&window.claude.use);
 
   let db=null,user=null,me=null,names={},asked=new Set(),isAdmin=false,canWrite=true,viewAs="team";
   let rawSites=[],siteInt={},rawTasks=[],internal={},marks={},comments=[],history=[];
   let sites=[],tasks=[],selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
-  let overrideArm=null,regOpen=null,delArm=null,openThread=null,studioAll=false;
+  let overrideArm=null,regOpen=null,delArm=null,openThread=null,studioAll=false,openTask=null;
   try{ selected=localStorage.getItem("crm-site"); tab=localStorage.getItem("crm-tab")||"active"; }catch(e){}
 
   const $=id=>document.getElementById(id);
@@ -319,7 +393,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
   function rebuild(){
     sites=rawSites.map(s=>({...s,...(siteInt[s.id]||{})}));
     tasks=rawTasks.map(r=>{
-      const t={...r,...(internal[r.id]||{})};
+      const t={...r,...(internal[r.id]||{}),owner:ownerOf(r.owner)};
       const m=marks[r.id];
       if(isStudioTask(r)&&m&&m.done&&!r.done){t.done=true;t.doneAt=m.at;t.doneBy=m.by;t.byStudio=true;}
       t.mark=m||null;
@@ -339,9 +413,12 @@ details.plain>summary{cursor:pointer;list-style:revert}
     return {c:"green",label:n==null?"Без срока":`В срок · ${n} дн.`};
   }
   function worst(list){let w=null;for(const t of list){const c=status(t).c;if(!w||RANK[c]>RANK[w])w=c;}return w;}
-  function gateState(list){if(!list.length)return "empty";if(list.every(t=>t.done))return "done";const w=worst(list.filter(t=>!t.done));return w==="paused"?"empty":w;}
+  // Гейт 3 Ф1 и гейт 2 Ф2 не считаются пройденными, пока в Ф1 есть открытые P1
+  function p1Open(st){return st.filter(x=>x.fw===1&&x.prio==="P1"&&!x.done);}
+  function p1Hold(st,fw,g){return ((fw===1&&g===3)||(fw===2&&g===2))&&p1Open(st).length>0&&st.some(t=>t.fw===fw&&t.gate===g);}
+  function gateState(list){if(!list.length)return "empty";if(list.every(t=>t.done))return p1Hold(siteTasks(list[0].site),list[0].fw,list[0].gate)?"orange":"done";const w=worst(list.filter(t=>!t.done));return w==="paused"?"empty":w;}
   const siteTasks=id=>tasks.filter(t=>t.site===id);
-  function currentGate(st,fw){for(let g=0;g<6;g++){const l=st.filter(t=>t.fw===fw&&t.gate===g);if(l.length&&!l.every(t=>t.done))return g;}return null;}
+  function currentGate(st,fw){for(let g=0;g<6;g++){const l=st.filter(t=>t.fw===fw&&t.gate===g);if(l.length&&(!l.every(t=>t.done)||p1Hold(st,fw,g)))return g;}return null;}
 
   async function write(fn,okMsg){
     try{await fn();if(okMsg)toast(okMsg);return true;}
@@ -407,44 +484,40 @@ details.plain>summary{cursor:pointer;list-style:revert}
       return h("div",{class:"rail"},h("h3",{text:FW[fw].name}),h("div",{class:"rail-row"},...FW[fw].gates.map((name,g)=>{
         const l=st.filter(t=>t.fw===fw&&t.gate===g);let gs=gateState(l);
         if(simple)gs=!l.length?"empty":l.every(t=>t.done)?"done":cur===g?"cur":"next";
-        return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
+        return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const open=l.filter(t=>!t.done&&(!simple||isStudioTask(t))).map(t=>t.id);if(open.length&&!simple){jumpTo(open);return;}const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
           h("span",{class:"g",text:"Гейт "+g}),h("span",{class:"t",text:name}),h("span",{class:"p",text:l.length?`${l.filter(t=>t.done).length}/${l.length}`:"нет задач"}),
-          !simple&&l.some(t=>t.review)?h("span",{class:"p",text:l.filter(t=>t.review).every(t=>t.done)?"проверен ✓":"ждёт проверки"}):null);
+          !simple&&p1Hold(st,fw,g)?h("span",{class:"p hold",text:"ждёт закрытия P1"}):null);
       })),fw===2&&!simple?h("p",{class:"rule",text:"Продвижение стартует после гейта 2 Ф1: семантику и структуру готовим во время внедрения. Страницы публикуются (гейт 2) только когда в Ф1 нет открытых P1."}):null);
     }));
   }
 
-  function thread(t,side){
-    const open=openThread===t.id;
+  function thread(t,side,inCard){
+    const open=inCard||openThread===t.id;
     const list=t.comments;
     const btn=h("button",{class:"icon"+(list.length?" has":""),type:"button","aria-expanded":String(open),onclick:()=>{openThread=open?null:t.id;render();}},list.length?`Комментарии · ${list.length}`:"Комментировать");
     if(!open)return {btn,box:null};
+    const taId=inCard?"dlg-cmt":null;
     const box=h("div",{class:"thread"},
       ...list.map(c=>h("div",{class:"cmt "+(c.side||"team")},h("div",{class:"cmt-h"},h("b",{text:c.side==="studio"?"Студия":"Подрядчик"}),h("span",{class:"muted mono",text:" · "+fmtStamp(c.at)+(c.by&&!DEMO?" · "+who(c.by):"")})),h("div",{class:"cmt-t",text:c.text}))),
       canWrite?h("form",{class:"cmt-form",onsubmit:e=>{e.preventDefault();const inp=e.target.querySelector("textarea");const text=inp.value.trim();if(!text)return;
         write(()=>db.collection("comments").add({site:t.site,task:t.id,text,side,by:me||(DEMO?side:""),at:nowISO()})).then(ok=>{if(ok){inp.value="";}});}},
-        h("textarea",{rows:"2",placeholder:side==="studio"?"Ответ или вопрос подрядчику":"Ответ студии","aria-label":"Комментарий"}),h("button",{class:"btn sm",type:"submit"},"Отправить")):null);
+        h("textarea",{rows:"2",id:taId,placeholder:side==="studio"?"Ответ или вопрос подрядчику":"Ответ студии","aria-label":"Комментарий"}),h("button",{class:"btn sm",type:"submit"},"Отправить")):null);
     return {btn,box};
   }
 
   // ---------- вид подрядчика ----------
-  function reviewBlock(t){
-    const st=siteTasks(t.site),same=x=>x.fw===t.fw&&x.gate===t.gate&&x.id!==t.id&&(x.cycle||"")===(t.cycle||"");
-    const open=st.filter(x=>same(x)&&!x.done&&!x.review);
-    const ord=l=>l.sort((a,b)=>a.fw-b.fw||a.gate-b.gate||String(a.due||"9").localeCompare(String(b.due||"9"))).map(x=>x.id);
-    if(open.length)return {hard:true,msg:`Сначала закройте задачи гейта: открыто ${open.length}`,ids:ord(open)};
-    const p1=st.filter(x=>x.fw===1&&x.prio==="P1"&&!x.done);
-    if(t.fw===1&&t.gate===3&&p1.length)return {hard:true,msg:`Гейт 3 закрывается, когда выполнены все P1: открыто ${p1.length}`,ids:ord(p1)};
-    if(t.fw===2&&t.gate===2&&p1.length)return {hard:true,msg:`Страницы публикуются, когда в Ф1 нет открытых P1: открыто ${p1.length}`,ids:ord(p1)};
-    if(me&&st.some(x=>same(x)&&x.doneBy===me))return {hard:false,msg:"Принцип «четырёх глаз»: вы закрывали задачи этого гейта. Нажмите ещё раз, чтобы всё равно подтвердить"};
-    return null;
+  // Добро на публикацию (гейт 3 Ф1) и публикация страниц (гейт 2 Ф2) — только когда в Ф1 нет открытых P1
+  function p1Block(t){
+    if(!((t.fw===1&&t.gate===3&&t.approval)||(t.fw===2&&t.gate===2)))return null;
+    const p1=p1Open(siteTasks(t.site)).filter(x=>x.id!==t.id);if(!p1.length)return null;
+    const ids=p1.sort((a,b)=>a.gate-b.gate||String(a.due||"9").localeCompare(String(b.due||"9"))).map(x=>x.id);
+    return {msg:t.fw===1?`Публикация — когда закрыты все P1: открыто ${p1.length}`:`Страницы публикуются, когда в Ф1 нет открытых P1: открыто ${p1.length}`,ids};
   }
   function setDone(t,val){
-    let override=false;
-    if(val&&t.review){const b=reviewBlock(t);if(b){if(b.hard||overrideArm!==t.id){toast(b.msg,b.ids);if(!b.hard){overrideArm=t.id;setTimeout(()=>{if(overrideArm===t.id)overrideArm=null;},6000);}render();return;}override=true;overrideArm=null;}}
+    if(val){const b=p1Block(t);if(b){toast(b.msg,isAdmin||DEMO?b.ids:null);render();return;}}
     const data=val?{done:true,doneAt:nowISO(),doneBy:me||(DEMO?"team":"")}:{done:false,doneAt:"",doneBy:""};
     write(async()=>{await db.doc("tasks/"+t.id).update(data);if(!val&&t.mark&&t.mark.done)await db.doc("studio/"+t.id).set({...t.mark,done:false});})
-      .then(ok=>{if(ok)log(t.site,override?"review_override":val?"done":"reopened",{task:t.id,title:t.title});});
+      .then(ok=>{if(ok)log(t.site,val?"done":"reopened",{task:t.id,title:t.title});});
   }
   const PRIOS=["P1","P2","P3",""];
   function cyclePrio(t){const n=PRIOS[(PRIOS.indexOf(t.prio||"")+1)%PRIOS.length];write(()=>saveInternal(t,{prio:n})).then(ok=>{if(ok)log(t.site,"prio",{task:t.id,title:t.title,detail:n||"без приоритета"});});}
@@ -454,9 +527,9 @@ details.plain>summary{cursor:pointer;list-style:revert}
     const th=thread(t,"team");
     return h("div",{class:"task "+s.c,id:"t-"+t.id},
       h("input",{type:"checkbox",checked:t.done,"aria-label":"Выполнено: "+t.title,onchange:e=>setDone(t,e.target.checked)}),
-      h("div",{class:"body"},h("span",{class:"title",text:t.title}),
+      h("div",{class:"body"},h("button",{class:"title link",type:"button",onclick:()=>openCard(t.id)},t.title),
         h("span",{class:"info"},h("button",{class:"prio "+(t.prio||""),type:"button",title:"Приоритет: нажмите, чтобы сменить","aria-label":"Приоритет "+(t.prio||"не задан"),onclick:()=>cyclePrio(t)},t.prio||"P–"),
-          t.review?h("span",{class:"rev",text:"Проверка гейта"}):null,t.approval?h("span",{class:"rev appr",text:"Утверждение студии"}):null,
+          t.approval?h("span",{class:"rev appr",text:"Утверждение студии"}):null,
           h("span",{class:"status "+s.c,text:s.label}),h("span",{text:t.owner||"Без ответственного"}),closed,t.note?h("span",{text:t.note}):null,th.btn),
         th.box),
       h("div",{class:"actions"},
@@ -487,10 +560,9 @@ details.plain>summary{cursor:pointer;list-style:revert}
       if(!v)c+=" none";
       return h("div",null,h("span",{class:"k",text:l}),h("span",{class:c,text:v||"не заполнено"}));
     });
-    const same=s.executor&&s.reviewer&&s.executor.trim().toLowerCase()===s.reviewer.trim().toLowerCase();
     const filled=REG.filter(([k,,pair])=>pair?(s[k+"Before"]||s[k+"Now"]):s[k]).length;
-    const box=h("details",{class:"regbox"},h("summary",null,"Карточка реестра ",h("span",{class:"mono muted",text:`(${filled}/${REG.length})`}),h("span",{class:"muted",text:" · видна только команде"}),same?h("span",{class:"muted",text:" · нарушены «четыре глаза»"}):null),
-      h("div",{class:"card"},...cells,same?h("div",{class:"warn",text:"Исполнитель и проверяющий — один человек: нарушен принцип «четырёх глаз»."}):null));
+    const box=h("details",{class:"regbox"},h("summary",null,"Карточка реестра ",h("span",{class:"mono muted",text:`(${filled}/${REG.length})`}),h("span",{class:"muted",text:" · видна только команде"})),
+      h("div",{class:"card"},...cells));
     if(regOpen||window.innerWidth>700&&regOpen!==false)box.open=true;box.addEventListener("toggle",()=>{regOpen=box.open;});return box;
   }
   function reportsToText(r){return (r||[]).map(x=>x.title+" | "+x.url).join("\n");}
@@ -536,17 +608,17 @@ details.plain>summary{cursor:pointer;list-style:revert}
     if(tasks.some(x=>x.site===s.id&&x.cycle===key)){toast("Задачи на этот месяц уже созданы");return;}
     const lv=s.level||"B",L=LEVEL[lv]||LEVEL.B,q=m%3===0;
     const mn=new Date(y,m,1).toLocaleDateString("ru-RU",{month:"long"}),pre=cap(mn)+" "+y+" · ";
-    const list=[[2,"Сбор данных: Search Console, Core Web Vitals, AI-запросы","Аналитик",3],
-      ...((lv!=="C"||q)?[[2,`Контрольные AI-запросы: ${L.ai}`,"Аналитик",3]]:[]),
-      [2,"Разбор красных флагов, технические — в Ф1","Менеджер",5],
-      ...(L.art?[[2,`Статьи блога: ${L.art}`,"Автор контента",25]]:[]),...(L.upd?[[2,`Обновить страницы: ${L.upd}`,"Автор контента",25]]:[]),
-      ...(lv==="C"?[[2,q?"Мониторинг и обновление одной страницы (квартал)":"Мониторинг позиций и индексации","SEO-специалист",25]]:[]),
-      [1,"Еженедельные замеры Lighthouse: главная + 2–3 страницы","Тех. специалист",28],[1,"Search Console: ошибки индексации, Core Web Vitals, новые 404","SEO-специалист",5],
-      ...(q?[[1,"Квартальный прогон чек-листа аудита","SEO-специалист",20]]:[]),
-      [2,"Проверка гейта 5 за месяц","Проверяющий",28,1],[2,"Отчёт студии и план на следующий месяц","Менеджер",30],[2,"Ответы студии на вопросы из отчёта","Студия",33]];
+    const list=[[2,"Сбор данных: Search Console, Core Web Vitals, AI-запросы","Подрядчик",3],
+      ...((lv!=="C"||q)?[[2,`Контрольные AI-запросы: ${L.ai}`,"Подрядчик",3]]:[]),
+      [2,"Разбор красных флагов, технические — в Ф1","Подрядчик",5],
+      ...(L.art?[[2,`Статьи блога: ${L.art}`,"Подрядчик",25]]:[]),...(L.upd?[[2,`Обновить страницы: ${L.upd}`,"Подрядчик",25]]:[]),
+      ...(lv==="C"?[[2,q?"Мониторинг и обновление одной страницы (квартал)":"Мониторинг позиций и индексации","Подрядчик",25]]:[]),
+      [1,"Еженедельные замеры Lighthouse: главная + 2–3 страницы","Подрядчик",28],[1,"Search Console: ошибки индексации, Core Web Vitals, новые 404","Подрядчик",5],
+      ...(q?[[1,"Квартальный прогон чек-листа аудита","Подрядчик",20]]:[]),
+      [2,"Отчёт студии и план на следующий месяц","Подрядчик",30],[2,"Ответы студии на вопросы из отчёта","Студия",33]];
     const last=new Date(y,m+1,0).getDate();
     write(async()=>{for(const [fw,title,owner,day,rev] of list){const due=day>last?iso(new Date(y,m+1,day-last)):iso(new Date(y,m,day));
-        await db.collection("tasks").add({site:s.id,fw,gate:5,title:pre+title,owner,due,review:!!rev,approval:false,cycle:key,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}
+        await db.collection("tasks").add({site:s.id,fw,gate:5,title:pre+title,owner,due,approval:false,cycle:key,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}
       log(s.id,"cycle",{title:s.name,detail:pre.replace(" · ","")});},"Созданы задачи: "+pre.replace(" · ",""));
   }
   function historyBlock(s){
@@ -569,7 +641,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
       const fwTasks=st.filter(t=>t.fw===fw&&pass(t));if(!fwTasks.length)continue;
       groups.append(h("div",{class:"fw-title",text:FW[fw].name}));
       for(let g=0;g<6;g++){
-        const l=fwTasks.filter(t=>t.gate===g).sort((a,b)=>(a.done-b.done)||(!!a.review-!!b.review)||RANK[status(b).c]-RANK[status(a).c]||String(a.prio||"P9").localeCompare(String(b.prio||"P9"))||String(a.due||"9").localeCompare(String(b.due||"9")));
+        const l=fwTasks.filter(t=>t.gate===g).sort((a,b)=>(a.done-b.done)||RANK[status(b).c]-RANK[status(a).c]||String(a.prio||"P9").localeCompare(String(b.prio||"P9"))||String(a.due||"9").localeCompare(String(b.due||"9")));
         if(!l.length)continue;
         const all=st.filter(t=>t.fw===fw&&t.gate===g),gs=gateState(all);shown+=l.length;
         groups.append(h("div",{class:"group",id:`g-${fw}-${g}`},h("div",{class:"group-head"},h("i",{class:"dot "+(gs==="done"?"green":gs==="empty"?"grey":gs)}),h("h3",{text:`Гейт ${g}. ${FW[fw].gates[g]}`}),h("span",{class:"p",text:`${all.filter(t=>t.done).length}/${all.length}`})),...l.map(taskRow)));
@@ -579,7 +651,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
     const add=h("form",{class:"add",onsubmit:e=>{e.preventDefault();
       const title=$("nt-title").value.trim();if(!title){$("nt-title").focus();return;}
       const owner=$("nt-owner").value,flag=$("nt-flag").checked,prio=flag?"P1":$("nt-prio").value;
-      const data={site:s.id,fw:Number($("nt-fw").value),gate:Number($("nt-gate").value),title,owner,due:$("nt-due").value,review:owner==="Проверяющий"&&/^Проверка гейта/.test(title),approval:owner==="Студия"&&$("nt-appr").checked,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()};
+      const data={site:s.id,fw:Number($("nt-fw").value),gate:Number($("nt-gate").value),title,owner,due:$("nt-due").value,approval:owner==="Студия"&&$("nt-appr").checked,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()};
       write(async()=>{const ref=await db.collection("tasks").add(data);if(flag||prio)await db.doc("internal/"+ref.id).set({note:"",prio,flag});$("nt-title").value="";$("nt-flag").checked=false;$("nt-appr").checked=false;log(s.id,"created",{task:ref.id,title});},"Задача добавлена");}},
       h("h3",{text:"Новая задача"}),
       h("div",{class:"form"},
@@ -614,6 +686,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
   // ---------- вид студии ----------
   function studioAct(t,val){
     if(!canWrite){toast("У вас доступ только для просмотра");render();return;}
+    if(val){const b=p1Block(t);if(b){toast(b.msg.replace("Публикация —","Добро на публикацию можно дать,"));return;}}
     write(()=>db.doc("studio/"+t.id).set({site:t.site,done:val,at:nowISO(),by:me||(DEMO?"studio":"")}),val?(t.approval?"Утверждено":"Отмечено как выполненное"):"Возвращено в работу");
   }
   function studioRow(t,showSite){
@@ -623,7 +696,7 @@ details.plain>summary{cursor:pointer;list-style:revert}
       :(canWrite?h("button",{class:"btn sm",type:"button",onclick:()=>studioAct(t,true)},t.approval?"Утвердить":"Готово"):null);
     return h("div",{class:"task "+s.c,id:"t-"+t.id},
       h("i",{class:"dot "+(s.c==="done"?"grey":s.c),style:"margin-top:6px"}),
-      h("div",{class:"body"},h("span",{class:"title",text:t.title}),
+      h("div",{class:"body"},h("button",{class:"title link",type:"button",onclick:()=>openCard(t.id)},t.title),
         h("span",{class:"info"},showSite&&site?h("b",{text:site.name}):null,t.approval?h("span",{class:"rev appr",text:"Утверждение"}):null,h("span",{class:"status "+s.c,text:s.label}),
           t.due&&!t.done?h("span",{text:"срок "+fmtDate(t.due)}):null,t.done&&t.doneAt?h("span",{class:"closed",text:fmtStamp(t.doneAt)}):null,th.btn),th.box),
       h("div",{class:"actions"},act));
@@ -669,6 +742,53 @@ details.plain>summary{cursor:pointer;list-style:revert}
     return parts;
   }
 
+
+  // ---------- карточка задачи ----------
+  function setHash(v){try{history.replaceState(null,"",v?"#"+v:location.pathname+location.search);}catch(e){try{location.hash=v||"";}catch(e2){}}}
+  function openCard(id){openTask=id;setHash("task="+encodeURIComponent(id));render();}
+  function closeCard(){openTask=null;setHash("");const d=$("task-dlg");if(d.open)d.close();render();}
+  function renderCard(){
+    const d=$("task-dlg");
+    const t=openTask&&tasks.find(x=>x.id===openTask);
+    if(!t){if(d.open)d.close();return;}
+    const site=siteOf(t),st=status(t),studio=studioView(),side=studio?"studio":"team";
+    const desc=descOf(t);
+    const kv=(k,v)=>v?h("div",{class:"kv"},h("span",{class:"k",text:k}),h("span",{class:"v"},v)):null;
+    const act=[];
+    if(studio){
+      if(isStudioTask(t)&&canWrite){if(!t.done)act.push(h("button",{class:"btn",type:"button",onclick:()=>studioAct(t,true)},t.approval?"Утвердить":"Готово"));
+        else if(t.byStudio)act.push(h("button",{class:"btn ghost",type:"button",onclick:()=>studioAct(t,false)},"Вернуть в работу"));}
+    }else act.push(h("button",{class:t.done?"btn ghost":"btn",type:"button",onclick:()=>setDone(t,!t.done)},t.done?"Вернуть в работу":"Отметить выполненной"));
+    const closed=t.done?(t.byStudio?(t.approval?"Утверждено студией":"Выполнено студией")+" · "+fmtStamp(t.doneAt):"Закрыто · "+fmtStamp(t.doneAt)+(t.doneBy?" · "+who(t.doneBy):"")):"";
+    const body=[
+      h("div",{class:"dlg-head"},h("div",{style:"min-width:0"},
+          h("div",{class:"dlg-crumbs muted",text:`${site?site.name+" · ":""}Ф${t.fw} · Гейт ${t.gate}. ${FW[t.fw].gates[t.gate]}`}),
+          h("h2",{id:"dlg-title",text:t.title})),
+        h("button",{class:"icon",type:"button","aria-label":"Закрыть",onclick:closeCard},"✕")),
+      h("div",{class:"dlg-badges"},h("span",{class:"status "+st.c,text:st.label}),t.approval?h("span",{class:"rev appr",text:"Утверждение студии"}):null,
+        !studio&&t.prio?h("span",{class:"prio "+t.prio,text:t.prio}):null,!studio&&t.flag?h("span",{class:"status red",text:"Красный флаг"}):null),
+      h("div",{class:"kvs"},kv("Ответственный",t.owner||"—"),
+        studio?kv("Срок",t.due?fmtDate(t.due):"без срока"):h("div",{class:"kv"},h("span",{class:"k",text:"Срок"}),h("input",{class:"date",type:"date",value:t.due||"",onchange:e=>{const v=e.target.value;write(()=>db.doc("tasks/"+t.id).update({due:v})).then(ok=>{if(ok)log(t.site,"due",{task:t.id,title:t.title,detail:v?fmtDate(v):"без срока"});});}})),
+        kv("Статус",closed||"В работе"),t.cycle?kv("Цикл",t.cycle):null),
+      h("section",{class:"dlg-sec"},h("h3",{text:studio?"Что нужно":"Что нужно сделать"}),
+        desc?h("p",{class:"desc",text:desc}):h("p",{class:"muted",text:studio?"Описание не добавлено — задайте вопрос в комментарии.":"Описание не добавлено."}),
+        !studio?h("details",{class:"edit"},h("summary",null,t.desc?"Изменить описание":"Написать своё описание"),
+          h("form",{class:"stack",onsubmit:e=>{e.preventDefault();const v=$("dlg-desc").value.trim();write(()=>db.doc("tasks/"+t.id).update({desc:v}),"Описание сохранено");}},
+            h("span",{class:"k",text:"Видно студии. Пустое поле — вернётся описание по умолчанию."}),h("textarea",{id:"dlg-desc",rows:"5"},t.desc||desc),h("button",{class:"btn sm",type:"submit"},"Сохранить"))):null),
+      !studio?h("section",{class:"dlg-sec internal"},h("h3",null,"Внутреннее ",h("span",{class:"muted",text:"· студия не видит"})),
+        h("div",{class:"row"},h("button",{class:"prio "+(t.prio||""),type:"button",onclick:()=>cyclePrio(t)},"Приоритет: "+(t.prio||"нет")),
+          h("button",{class:"icon"+(t.flag?" on":""),type:"button",onclick:()=>write(()=>saveInternal(t,t.flag?{flag:false}:{flag:true,prio:"P1"})).then(ok=>{if(ok)log(t.site,t.flag?"unflag":"flag",{task:t.id,title:t.title});})},t.flag?"Снять флаг":"Поставить флаг")),
+        h("form",{class:"stack",onsubmit:e=>{e.preventDefault();const v=$("dlg-note").value.trim();write(()=>saveInternal(t,{note:v}),"Заметка сохранена");}},
+          h("span",{class:"k",text:"Заметка команды"}),h("textarea",{id:"dlg-note",rows:"2"},t.note||""),h("button",{class:"btn sm ghost",type:"submit"},"Сохранить заметку"))):null,
+      GATE_CRIT[t.fw+"-"+t.gate]?h("details",{class:"dlg-sec"},h("summary",null,`Когда гейт ${t.gate} считается пройденным`),h("p",{class:"desc",text:GATE_CRIT[t.fw+"-"+t.gate]})):null,
+      h("section",{class:"dlg-sec"},h("h3",{text:"Комментарии"}),thread(t,side,true).box),
+      !studio?(()=>{const ev=history.filter(e=>e.task===t.id).sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+        return ev.length?h("details",{class:"dlg-sec"},h("summary",null,`История задачи (${ev.length})`),h("ol",{class:"hist"},...ev.map(e=>h("li",null,h("span",{class:"mono muted",text:fmtStamp(e.at)}),h("span",{text:cap(e.by?who(e.by):"кто-то")+" "+(ACTIONS[e.action]||e.action)+(e.detail?" · "+e.detail:"")}))))):null;})():null,
+      act.length?h("div",{class:"dlg-actions"},...act):null
+    ];
+    d.replaceChildren(...body.filter(Boolean));
+    if(!d.open){try{d.showModal();}catch(e){d.setAttribute("open","");}}
+  }
   // ---------- рендер ----------
   function renderSite(){
     const box=$("site");
@@ -690,21 +810,27 @@ details.plain>summary{cursor:pointer;list-style:revert}
     document.querySelectorAll("details.plain").forEach((d,i)=>{if(det[i])d.open=true;});
     if(keepId&&$(keepId)){const el=$(keepId);if(el.type!=="checkbox"&&keepVal!=null)el.value=keepVal;el.focus();}
     if(ta!=null){const t=document.querySelector(".thread textarea");if(t){t.value=ta;t.focus();}}
+    renderCard();
+    if(keepId&&keepId.startsWith("dlg-")&&$(keepId)){const el=$(keepId);if(keepVal!=null)el.value=keepVal;el.focus();}
     resolveNames();
   }
 
+  $("task-dlg").addEventListener("close",()=>{if(openTask){openTask=null;setHash("");render();}});
+  window.addEventListener("hashchange",()=>{const m=location.hash.match(/^#task=(.+)$/);const id=m?decodeURIComponent(m[1]):null;if(id!==openTask){openTask=id;if(!id){const d=$("task-dlg");if(d.open)d.close();}render();}});
+  $("task-dlg").addEventListener("click",e=>{if(e.target===$("task-dlg"))closeCard();});
+  try{const m=location.hash.match(/^#task=(.+)$/);if(m)openTask=decodeURIComponent(m[1]);}catch(e){}
   $("add-site-toggle").addEventListener("click",()=>{const f=$("site-form");f.hidden=!f.hidden;if(!f.hidden){$("sf-start").value=iso(today());$("sf-name").focus();}});
   $("site-form").addEventListener("submit",e=>{e.preventDefault();if(!db){toast("Хранилище недоступно: войдите в claude.ai");return;}
     const name=$("sf-name").value.trim();if(!name)return;
     const start=$("sf-start").value||iso(today());
     const data={name,url:/^https?:\/\//.test(name)?name:"https://"+name,client:$("sf-client").value.trim(),level:$("sf-level").value,platform:$("sf-platform").value.trim(),segment:$("sf-segment").value.trim(),reports:[],startDate:start,status:"active",createdBy:me||"",createdAt:nowISO()};
-    const priv={executor:$("sf-executor").value.trim(),reviewer:$("sf-reviewer").value.trim()};
+    const priv={executor:$("sf-executor").value.trim()};
     const withTpl=$("sf-template").checked;
     write(async()=>{
       const ref=await db.collection("sites").add(data);
-      if(priv.executor||priv.reviewer)await db.doc("siteInternal/"+ref.id).set(priv);
+      if(priv.executor)await db.doc("siteInternal/"+ref.id).set(priv);
       log(ref.id,"p_created",{title:name});
-      if(withTpl){const base=parse(start);for(const [fw,gate,title,owner,off,rev,appr] of template(data.level)){await db.collection("tasks").add({site:ref.id,fw,gate,title,owner,due:iso(addDays(base,off)),review:!!rev,approval:!!appr,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}}
+      if(withTpl){const base=parse(start);for(const [fw,gate,title,owner,off,rev,appr] of template(data.level)){await db.collection("tasks").add({site:ref.id,fw,gate,title,owner,due:iso(addDays(base,off)),approval:!!appr,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}}
       selected=ref.id;tab="active";$("site-form").reset();$("site-form").hidden=true;},"Проект добавлен");});
 
   // ---------- демо-режим: локальное хранилище в браузере ----------
@@ -717,23 +843,23 @@ details.plain>summary{cursor:pointer;list-style:revert}
       D.siteInternal[id]=site.priv||{};
       for(const [fw,gate,title,owner,off,rev,appr] of template(lvl)){const tid=id+"-"+(++n);
         const done=(fw===1&&gate<doneUntil[0])||(fw===2&&gate<doneUntil[1]);
-        D.tasks[tid]={site:id,fw,gate,title,owner,due:iso(addDays(start,off)),review:!!rev,approval:!!appr,done:done&&owner!=="Студия",doneAt:done?addDays(start,off).toISOString():"",doneBy:done?"team":"",createdAt:start.toISOString()};
+        D.tasks[tid]={site:id,fw,gate,title,owner,due:iso(addDays(start,off)),approval:!!appr,done:done&&owner!=="Студия",doneAt:done?addDays(start,off).toISOString():"",doneBy:done?"team":"",createdAt:start.toISOString()};
         if(done&&owner==="Студия"){D.studio[tid]={site:id,done:true,at:addDays(start,off).toISOString(),by:"studio"};}
         if(!done&&parse(D.tasks[tid].due)<T)D.tasks[tid].due=iso(addDays(T,5+(n%9)));
       }
       (extra||(()=>{}))(id,start);
     };
     mk("aurora",{name:"aurora-villas.demo",client:"Aurora Villas (вымышленный)",segment:"люкс, недвижимость, США",reports:[{title:"Отчёт аудита (пример)",url:"#"},{title:"Семантическое ядро (пример)",url:"#"}],
-      priv:{executor:"Анна",reviewer:"Игорь",contact:"Мария, менеджер студии",media:"Webflow; видео — Vimeo",niche:"аренда вилл",market:"США, английский",scoreBefore:"41",lcpBefore:"6,2 с",weightBefore:"18 МБ",nextCheck:iso(addDays(T,4))}},"A",34,[3,1],(id,start)=>{
+      priv:{executor:"Анна",contact:"Мария, менеджер студии",media:"Webflow; видео — Vimeo",niche:"аренда вилл",market:"США, английский",scoreBefore:"41",lcpBefore:"6,2 с",weightBefore:"18 МБ",nextCheck:iso(addDays(T,4))}},"A",34,[3,1],(id,start)=>{
       let i=0;for(const [tid,t] of Object.entries(D.tasks)){if(t.site!==id||t.fw!==1||t.gate!==3)continue;i++;
         if(i===1){D.internal[tid]={prio:"P1",flag:true,note:"видео первого экрана 14 МБ"};t.due=iso(addDays(T,-1));}
         if(i===2)D.internal[tid]={prio:"P2",flag:false,note:""};}
       for(const [tid,t] of Object.entries(D.tasks)){if(t.site===id&&t.owner==="Студия"&&!t.done&&!D.studio[tid]){t.due=iso(addDays(T,2));
         D.comments["c1"]={site:id,task:tid,text:"Можно ли пережать видео без потери качества на больших экранах?",side:"studio",by:"studio",at:addDays(T,-1).toISOString()};
         D.comments["c2"]={site:id,task:tid,text:"Да: делаем две версии, 1080p для компьютера и 720p для телефона. Разница на глаз не видна.",side:"team",by:"team",at:addDays(T,-1).toISOString()};break;}}});
-    mk("nord",{name:"atelier-nord.demo",client:"Atelier Nord (вымышленный)",segment:"дизайн интерьеров, Европа",priv:{executor:"Олег",reviewer:"Анна",niche:"дизайн интерьеров",market:"Германия, английский",scoreBefore:"55"}},"B",9,[1,0],(id)=>{
-      for(const [tid,t] of Object.entries(D.tasks)){if(t.site===id&&t.fw===1&&t.gate===1&&t.review){t.done=false;t.doneAt="";}}});
-    mk("marina",{name:"casa-marina.demo",client:"Casa Marina (вымышленный)",segment:"ресторан, локальный бизнес",status:"paused",pauseNote:"ждём доступы от заказчика",priv:{executor:"Игорь",reviewer:"Олег"}},"C",5,[0,0]);
+    mk("nord",{name:"atelier-nord.demo",client:"Atelier Nord (вымышленный)",segment:"дизайн интерьеров, Европа",priv:{executor:"Олег",niche:"дизайн интерьеров",market:"Германия, английский",scoreBefore:"55"}},"B",9,[1,0],(id)=>{
+});
+    mk("marina",{name:"casa-marina.demo",client:"Casa Marina (вымышленный)",segment:"ресторан, локальный бизнес",status:"paused",pauseNote:"ждём доступы от заказчика",priv:{executor:"Игорь"}},"C",5,[0,0]);
     return D;
   }
   function localDb(){
