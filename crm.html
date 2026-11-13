@@ -38,7 +38,7 @@ h3{margin:0;font-size:13px;font-weight:600}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
 .dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.dot.grey{background:var(--grey)}
-.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;text-align:left;cursor:pointer}
 .tile b{font:600 26px/1.1 var(--f-mono)}
 .tile span{font-size:12px;color:var(--muted)}
@@ -162,18 +162,46 @@ h3{margin:0;font-size:13px;font-weight:600}
 @media (max-width:520px){.card,.card-edit{grid-template-columns:1fr 1fr}}
 .rail .rule{font-size:12px;color:var(--muted);margin:0}
 @media (max-width:520px){.hist li{grid-template-columns:1fr;gap:0}.two{grid-template-columns:1fr}}
+.viewbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13px}
+.viewbar:empty{display:none}
+.demo-tag{font:600 11px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;padding:5px 8px;border-radius:4px;background:var(--orange-bg);color:var(--orange)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);font-weight:600}
+.btn.sm{padding:4px 10px;font-size:12px}
+.rev.appr{color:var(--green);background:var(--green-bg);border-color:transparent}
+.icon.has{color:var(--ink);border-color:var(--ink)}
+.thread{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:8px 10px;background:var(--sunk);border-radius:6px;border:1px solid var(--line)}
+.cmt{display:flex;flex-direction:column;gap:2px;font-size:13px;padding:6px 8px;border-radius:6px;background:var(--surface);border-left:3px solid var(--ink)}
+.cmt.studio{border-left-color:var(--orange)}
+.cmt-h{font-size:12px}.cmt-t{white-space:pre-wrap;overflow-wrap:anywhere}
+.cmt-form{display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap}
+.cmt-form textarea,.inline-form textarea{flex:1 1 220px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;font:inherit;color:inherit;resize:vertical}
+.inline-form .wide{flex:1 1 100%;display:flex;flex-direction:column;gap:2px}
+.card-edit .wide{grid-column:1/-1}
+.cnt.plain{background:var(--sunk);color:var(--fg)}
+.gate.cur{border-color:var(--ink);box-shadow:inset 0 3px 0 var(--ink)}
+.gate.next{opacity:.7}
+.reports{margin:6px 0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.reports a{color:var(--ink)}
+details.plain>summary{cursor:pointer;list-style:revert}
+.mini{padding:6px 0}.mini h3{font-size:12px;color:var(--muted);margin-bottom:4px}
+.mini ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.mini li.ok{color:var(--muted)}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 
 <div class="app">
   <div class="top">
-    <h1>Реестр сайтов студии</h1>
-    <div class="legend">
+    <h1 id="title">Реестр сайтов студии</h1>
+    <div class="legend" id="legend">
       <span><i class="dot red"></i>красный флаг или просрочено</span>
       <span><i class="dot orange"></i>срок через 3 дня или меньше</span>
       <span><i class="dot green"></i>в срок или выполнено</span>
       <span><i class="dot grey"></i>проект на паузе</span>
     </div>
   </div>
+  <div class="viewbar" id="viewbar"></div>
   <div class="tiles" id="tiles"></div>
   <div class="main">
     <aside class="panel sites" aria-label="Проекты">
@@ -210,37 +238,46 @@ h3{margin:0;font-size:13px;font-weight:600}
     1:{name:"Фреймворк 1 · Техническая оптимизация", gates:["Сайт принят","Аудит принят","Объём согласован","Готово к публикации","Сдача","Стабильность"]},
     2:{name:"Фреймворк 2 · SEO-продвижение", gates:["Сайт в продвижении","Семантика утверждена","Структура запущена","Контент и AI","Первый результат","Ежемесячный цикл"]}
   };
+  // [фреймворк, гейт, название, ответственный, день от старта, проверка гейта, утверждение студией]
   function template(level){
     const A=level==="A",C=level==="C",ai=A?10:C?3:5;
     return [
-      [1,0,"Доступы от студии: CMS, хостинг видео, Search Console, Google Analytics","Менеджер",2],[1,0,"Контакт в студии и границы работ","Менеджер",2],[1,0,"Резервная копия сайта","Тех. специалист",3],
+      [1,0,"Доступы от студии: CMS, хостинг видео, Search Console, Google Analytics","Студия",2],[1,0,"Контакт в студии и границы работ","Студия",2],[1,0,"Резервная копия сайта","Тех. специалист",3],
       [1,1,"Замеры: главная + 5 страниц, телефон и компьютер, медиана из 3 прогонов","Тех. специалист",7],[1,1,"Обход адресов и чек-лист аудита на 100%","SEO-специалист",7],
       [1,1,"Приоритеты P1–P3 по находкам, флаги по порогам","SEO-специалист",8],[1,1,"Проверка гейта 1 по критериям","Проверяющий",9,1],[1,1,"Отчёт аудита для студии","Менеджер",10],
-      [1,2,"Студия утвердила план задач и пороги","Студия",14],[1,2,"Материалы и решения от студии для P1","Студия",14],
+      [1,2,"Студия утвердила план задач и пороги","Студия",14,0,1],[1,2,"Материалы и решения от студии для P1","Студия",14],
       [1,3,"Все задачи P1 на тестовой версии","Тех. специалист",28],[1,3,"Тестовая версия: метрики в порогах, визуальное сравнение, редиректы, 0 битых ссылок, разметка без ошибок","Тех. специалист",29],
-      [1,3,"Проверка гейта 3 по критериям","Проверяющий",30,1],[1,3,"Студия посмотрела тестовую версию и дала добро на публикацию","Студия",31],
+      [1,3,"Проверка гейта 3 по критериям","Проверяющий",30,1],[1,3,"Студия посмотрела тестовую версию и дала добро на публикацию","Студия",31,0,1],
       [1,4,"Повторные замеры на боевом сайте","Тех. специалист",33],[1,4,"Карта сайта отправлена в Search Console","SEO-специалист",33],[1,4,"Отчёт «было / стало» для студии","Менеджер",35],
+      [1,4,"Студия приняла результат по отчёту «было / стало»","Студия",37,0,1],
       [1,5,"Контроль через 30 дней: регрессии, индексация, склейка адресов","Тех. специалист",64],[1,5,"Проверка гейта 5","Проверяющий",65,1],
-      [2,0,"Ниша, сегмент, рынок, язык и исключения — в карточке проекта","Менеджер",15],[2,0,"Точка отсчёта: показы, клики, страницы в индексе","Аналитик",16],
+      [2,0,"Ниша, сегмент, рынок, язык и исключения заказчика","Студия",15],[2,0,"Точка отсчёта: показы, клики, страницы в индексе","Аналитик",16],
       [2,0,`Базовый тест AI: ${ai} запросов в ChatGPT, Gemini, Perplexity`,"Аналитик",16],
       [2,1,A?"Индивидуальное семантическое ядро":"Типовое ядро ниши + адаптация","SEO-специалист",25],[2,1,"Группы запросов закреплены за страницами, минус-слова, приоритеты","SEO-специалист",25],
-      [2,1,"Проверка гейта 1","Проверяющий",27,1],...(A?[[2,1,"Ядро утверждено студией","Студия",30]]:[]),
+      [2,1,"Проверка гейта 1","Проверяющий",27,1],...(A?[[2,1,"Ядро утверждено студией","Студия",30,0,1]]:[]),
       [2,2,"Страницы приоритета 1 по стандартам контента","Автор контента",45],[2,2,"Внутренние ссылки и отправка новых страниц на индексацию","SEO-специалист",46],[2,2,"Проверка гейта 2","Проверяющий",47,1],
+      [2,3,"Факты о компании и фото проектов от заказчика","Студия",50],
       ...(C?[]:[[2,3,"Блог и первые статьи по плану","Автор контента",60]]),[2,3,"FAQ и блок фактов о компании","Автор контента",60],
       [2,3,"Структурированные данные по типам страниц; Google Business Profile, если бизнес локальный","SEO-специалист",62],[2,3,"Контент-план на 3 месяца","SEO-специалист",62],[2,3,"Проверка гейта 3","Проверяющий",64,1],
-      [2,4,"Отчёт за 90 дней после гейта 2","Аналитик",137]
+      [2,4,"Отчёт за 90 дней после гейта 2","Аналитик",137],[2,4,"Студия приняла отчёт за 90 дней","Студия",140,0,1]
     ];
   }
   const LEVEL={A:{art:4,upd:2,ai:10},B:{art:2,upd:0,ai:5},C:{art:0,upd:0,ai:3}};
   const REG=[["executor","Исполнитель"],["reviewer","Проверяющий"],["contact","Контакт в студии"],["media","Хостинг медиа"],["niche","Ниша"],["market","Рынок и язык"],["exclusions","Чего заказчик не делает"],
     ["score","Оценка телефона, до → сейчас",1],["lcp","LCP телефона, до → сейчас",1],["weight","Вес главной, до → сейчас",1],["nextCheck","Следующая проверка"],["failReason","Причина, если гейт не пройден"]];
+  const REG_KEYS=REG.flatMap(([k,,p])=>p?[k+"Before",k+"Now"]:[k]);
   const OWNERS=["Менеджер","Тех. специалист","SEO-специалист","Автор контента","Аналитик","Проверяющий","Студия"];
   const PSTATUS={active:"В работе",paused:"На паузе",done:"Завершён",archived:"Архив"};
   const ACTIONS={done:"закрыл(а) задачу",reopened:"вернул(а) в работу задачу",flag:"поставил(а) флаг",unflag:"снял(а) флаг",due:"изменил(а) срок",created:"добавил(а) задачу",deleted:"удалил(а) задачу",
-    p_created:"создал(а) проект",p_paused:"поставил(а) проект на паузу",p_active:"вернул(а) проект в работу",p_done:"завершил(а) проект",p_archived:"отправил(а) проект в архив",p_edited:"изменил(а) карточку проекта",prio:"изменил(а) приоритет",cycle:"создал(а) задачи месяца",review_override:"закрыл(а) проверку без «четырёх глаз»"};
+    p_created:"создал(а) проект",p_paused:"поставил(а) проект на паузу",p_active:"вернул(а) проект в работу",p_done:"завершил(а) проект",p_archived:"отправил(а) проект в архив",p_edited:"изменил(а) карточку проекта",
+    prio:"изменил(а) приоритет",cycle:"создал(а) задачи месяца",review_override:"закрыл(а) проверку без «четырёх глаз»",studio_done:"студия: выполнено",studio_approved:"студия: утверждено",studio_undo:"студия: вернула в работу",comment:"комментарий к задаче"};
   const RANK={red:3,orange:2,green:1,paused:0,done:0};
-  let db=null,user=null,me=null,names={},asked=new Set();
-  let sites=[],tasks=[],history=[],overrideArm=null,regOpen=null,delArm=null,selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
+  const DEMO=!(window.claude&&window.claude.use);
+
+  let db=null,user=null,me=null,names={},asked=new Set(),isAdmin=false,canWrite=true,viewAs="team";
+  let rawSites=[],siteInt={},rawTasks=[],internal={},marks={},comments=[],history=[];
+  let sites=[],tasks=[],selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
+  let overrideArm=null,regOpen=null,delArm=null,openThread=null,studioAll=false;
   try{ selected=localStorage.getItem("crm-site"); tab=localStorage.getItem("crm-tab")||"active"; }catch(e){}
 
   const $=id=>document.getElementById(id);
@@ -248,19 +285,38 @@ h3{margin:0;font-size:13px;font-weight:600}
   function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200);}
   function today(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
   function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+  function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
   function parse(s){if(!s)return null;const [y,m,d]=s.slice(0,10).split("-").map(Number);return new Date(y,m-1,d);}
   function daysLeft(s){const d=parse(s);if(!d)return null;return Math.round((d-today())/864e5);}
   function fmtDate(s){const d=parse(s);return d?d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}):"";}
   function fmtStamp(s){if(!s)return "";if(s.length<=10)return fmtDate(s);const d=new Date(s);return d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+", "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});}
-  function who(id){if(!id)return "";if(id===me)return "вы";return names[id]||"участник";}
+  function who(id){if(!id)return "";if(id===me)return "вы";if(DEMO)return id==="studio"?"студия":id==="team"?"команда":id;return names[id]||"участник";}
+  const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
+  const nowISO=()=>new Date().toISOString();
   const siteOf=t=>sites.find(s=>s.id===t.site);
   const pstat=s=>(s&&s.status)||"active";
+  const isStudioTask=t=>t.owner==="Студия";
+  const studioView=()=>viewAs==="studio";
+
+  // Сборка: публичные поля + внутренние (видны только команде) + отметки студии
+  function rebuild(){
+    sites=rawSites.map(s=>({...s,...(siteInt[s.id]||{})}));
+    tasks=rawTasks.map(r=>{
+      const t={...r,...(internal[r.id]||{})};
+      const m=marks[r.id];
+      if(isStudioTask(r)&&m&&m.done&&!r.done){t.done=true;t.doneAt=m.at;t.doneBy=m.by;t.byStudio=true;}
+      t.mark=m||null;
+      t.comments=comments.filter(c=>c.task===r.id).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+      return t;
+    });
+  }
+
   function status(t){
-    if(t.done) return {c:"done",label:"Выполнено"};
+    if(t.done) return {c:"done",label:t.byStudio?(t.approval?"Утверждено студией":"Выполнено студией"):"Выполнено"};
     const s=siteOf(t);
     if(s&&pstat(s)!=="active") return {c:"paused",label:PSTATUS[pstat(s)]};
     const n=daysLeft(t.due);
-    if(t.flag) return {c:"red",label:n!=null&&n<0?`Флаг · просрочено ${-n} дн.`:"Красный флаг"};
+    if(t.flag&&!studioView()) return {c:"red",label:n!=null&&n<0?`Флаг · просрочено ${-n} дн.`:"Красный флаг"};
     if(n!=null&&n<0) return {c:"red",label:`Просрочено ${-n} дн.`};
     if(n!=null&&n<=3) return {c:"orange",label:n===0?"Срок сегодня":`Через ${n} дн.`};
     return {c:"green",label:n==null?"Без срока":`В срок · ${n} дн.`};
@@ -272,51 +328,89 @@ h3{margin:0;font-size:13px;font-weight:600}
 
   async function write(fn,okMsg){
     try{await fn();if(okMsg)toast(okMsg);return true;}
-    catch(e){toast(e&&e.code==="permission_denied"?"Нет прав на изменение: попросите владельца дать доступ к редактированию":"Не удалось сохранить: "+(e&&e.message||"ошибка соединения"));return false;}
+    catch(e){toast(!canWrite?"У вас доступ только для просмотра":"Не удалось сохранить: "+(e&&e.message||"нет прав или нет связи"));return false;}
   }
-  function log(site,action,extra){if(!db)return;db.collection("history").add({site,action,by:me||"",at:new Date().toISOString(),...extra}).catch(()=>{});}
+  function log(site,action,extra){if(!db||studioView()&&!DEMO)return;db.collection("history").add({site,action,by:me||"",at:nowISO(),...extra}).catch(()=>{});}
+  function saveInternal(t,patch){const base=internal[t.id]||{note:t.note||"",prio:t.prio||"",flag:!!t.flag};return db.doc("internal/"+t.id).set({...base,...patch});}
+  function saveSiteInt(s,patch){const base=siteInt[s.id]||Object.fromEntries(REG_KEYS.filter(k=>s[k]).map(k=>[k,s[k]]));return db.doc("siteInternal/"+s.id).set({...base,...patch});}
 
   function resolveNames(){
-    if(!user)return;
-    const ids=new Set();for(const t of tasks)if(t.doneBy)ids.add(t.doneBy);for(const e of history)if(e.by)ids.add(e.by);for(const s of sites){if(s.pausedBy)ids.add(s.pausedBy);if(s.createdBy)ids.add(s.createdBy);}
+    if(!user||DEMO)return;
+    const ids=new Set();for(const t of tasks)if(t.doneBy)ids.add(t.doneBy);for(const e of history)if(e.by)ids.add(e.by);for(const c of comments)if(c.by)ids.add(c.by);for(const s of sites){if(s.pausedBy)ids.add(s.pausedBy);if(s.createdBy)ids.add(s.createdBy);}
     const need=[...ids].filter(id=>!asked.has(id));if(!need.length)return;need.forEach(id=>asked.add(id));
     user.profiles(need).then(ps=>{for(const id of need){names[id]=(ps&&ps[id]&&ps[id].name)||"";}render();}).catch(()=>{});
   }
 
-  function renderTiles(){
-    const act=new Set(sites.filter(s=>pstat(s)==="active").map(s=>s.id));
-    const open=tasks.filter(t=>!t.done&&act.has(t.site));
-    const red=open.filter(t=>status(t).c==="red").length,orange=open.filter(t=>status(t).c==="orange").length;
-    const paused=sites.filter(s=>pstat(s)==="paused").length;
-    const all=tasks.filter(t=>act.has(t.site)),done=all.filter(t=>t.done).length,pct=all.length?Math.round(done/all.length*100):0;
-    const tile=(cls,num,label,fn)=>h("button",{class:"tile "+cls,type:"button",onclick:fn},h("b",{text:num}),h("span",{text:label}));
-    $("tiles").replaceChildren(
-      tile("",String(act.size),paused?`проектов в работе · ${paused} на паузе`:"проектов в работе",()=>{tab="active";render();}),
-      tile("red",String(red),"красных задач",()=>{filter="red";render();}),
-      tile("orange",String(orange),"срок через 3 дня или меньше",()=>{filter="orange";render();}),
-      tile("green",pct+"%",`выполнено в активных (${done} из ${all.length})`,()=>{filter="done";render();}));
+  // ---------- общие части ----------
+  function renderTop(){
+    const bar=$("viewbar");
+    const showToggle=DEMO||isAdmin;
+    bar.hidden=!showToggle&&!DEMO;
+    const parts=[];
+    if(DEMO)parts.push(h("span",{class:"demo-tag",text:"Демо"}),h("span",{class:"muted",text:"Вымышленные данные, изменения хранятся только в этом браузере."}),
+      h("button",{class:"btn ghost sm",type:"button",onclick:()=>{if(confirm("Вернуть демо-данные к началу?")){resetDemo();}}},"Сбросить демо"));
+    if(showToggle)parts.push(h("span",{class:"seg",role:"group","aria-label":"Вид"},...[["team","Подрядчик"],["studio","Студия"]].map(([k,l])=>h("button",{type:"button","aria-pressed":String(viewAs===k),onclick:()=>{viewAs=k;studioAll=false;filter="all";editing=false;try{localStorage.setItem("crm-view",k);}catch(e){};render();}},l))),
+      !DEMO&&viewAs==="studio"?h("span",{class:"muted",text:"Так трекер видит студия. Внутренние поля скрыты от неё на сервере."}):null);
+    bar.replaceChildren(...parts.flat().filter(Boolean));
+    $("title").textContent=studioView()?"Портфель сайтов":"Реестр сайтов студии";
+    $("legend").hidden=studioView();
   }
 
+  function siteDot(s){
+    const st=siteTasks(s.id),ps=pstat(s);if(ps!=="active")return "grey";
+    const open=st.filter(t=>!t.done&&(!studioView()||isStudioTask(t)));return worst(open)||"green";
+  }
   function renderSites(){
     const counts={active:0,paused:0,done:0,archived:0};for(const s of sites)counts[pstat(s)]++;
     $("site-tabs").replaceChildren(...["active","paused","done","archived","all"].map(k=>h("button",{class:"tab",type:"button",role:"tab","aria-selected":String(tab===k),onclick:()=>{tab=k;try{localStorage.setItem("crm-tab",k);}catch(e){}render();}},
       k==="all"?"Все":PSTATUS[k],h("span",{class:"mono",text:" "+(k==="all"?sites.length:counts[k])}))));
+    $("add-site-toggle").hidden=studioView();if(studioView())$("site-form").hidden=true;
     const box=$("site-list");if(!sitesLoaded)return;
     const list=sites.filter(s=>tab==="all"||pstat(s)===tab);
-    if(!list.length){box.replaceChildren(h("div",{class:"note",text:sites.length?"В этом разделе проектов нет.":"Проектов пока нет. Добавьте первый кнопкой «+ Проект»."}));return;}
-    const sorted=[...list].sort((a,b)=>{const wa=RANK[worst(siteTasks(a.id).filter(t=>!t.done))||"done"],wb=RANK[worst(siteTasks(b.id).filter(t=>!t.done))||"done"];return wb-wa||String(a.name).localeCompare(String(b.name));});
+    if(!list.length){box.replaceChildren(h("div",{class:"note",text:sites.length?"В этом разделе проектов нет.":(studioView()?"Сайтов пока нет.":"Проектов пока нет. Добавьте первый кнопкой «+ Проект».")}));return;}
+    const sorted=[...list].sort((a,b)=>RANK[siteDot(b)==="grey"?"done":siteDot(b)]-RANK[siteDot(a)==="grey"?"done":siteDot(a)]||String(a.name).localeCompare(String(b.name)));
     box.replaceChildren(...sorted.map(s=>{
-      const st=siteTasks(s.id),open=st.filter(t=>!t.done),ps=pstat(s);
-      const w=ps!=="active"?"grey":(worst(open)||"green");
+      const st=siteTasks(s.id),ps=pstat(s),w=siteDot(s);
+      const scope=studioView()?st.filter(isStudioTask):st;const open=scope.filter(t=>!t.done);
       const r=ps==="active"?open.filter(t=>status(t).c==="red").length:0,o=ps==="active"?open.filter(t=>status(t).c==="orange").length:0;
+      const waiting=studioView()&&ps==="active"?open.length:0;
       const g1=currentGate(st,1),g2=currentGate(st,2);
-      return h("button",{class:"site-item",type:"button","aria-current":String(s.id===selected),onclick:()=>{selected=s.id;editing=false;pausing=false;try{localStorage.setItem("crm-site",s.id);}catch(e){}render();}},
+      return h("button",{class:"site-item",type:"button","aria-current":String(s.id===selected&&!studioAll),onclick:()=>{selected=s.id;studioAll=false;editing=false;pausing=false;try{localStorage.setItem("crm-site",s.id);}catch(e){}render();}},
         h("i",{class:"dot "+w}),h("span",{class:"nm",text:s.name||"Без названия"}),
-        h("span",{class:"counts"},ps!=="active"?h("span",{class:"cnt grey",text:PSTATUS[ps]}):null,r?h("span",{class:"cnt red",text:String(r)}):null,ps==="active"&&s.nextCheck&&daysLeft(s.nextCheck)<0?h("span",{class:"cnt red",title:"Плановая проверка просрочена",text:"проверка"}):null,o?h("span",{class:"cnt orange",text:String(o)}):null),
+        h("span",{class:"counts"},ps!=="active"?h("span",{class:"cnt grey",text:PSTATUS[ps]}):null,
+          studioView()?(waiting?h("span",{class:"cnt "+(r?"red":o?"orange":"plain"),title:"Ждёт от студии",text:String(waiting)}):null)
+            :[r?h("span",{class:"cnt red",text:String(r)}):null,ps==="active"&&s.nextCheck&&daysLeft(s.nextCheck)<0?h("span",{class:"cnt red",title:"Плановая проверка просрочена",text:"проверка"}):null,o?h("span",{class:"cnt orange",text:String(o)}):null]),
         h("span",{class:"sub",text:`Уровень ${s.level||"—"} · Ф1: ${g1==null?"готово":"гейт "+g1} · Ф2: ${g2==null?"готово":"гейт "+g2}`}));
     }));
   }
 
+  function rails(st,simple){
+    return h("div",{class:"rails"},...[1,2].map(fw=>{
+      const cur=currentGate(st,fw);
+      return h("div",{class:"rail"},h("h3",{text:FW[fw].name}),h("div",{class:"rail-row"},...FW[fw].gates.map((name,g)=>{
+        const l=st.filter(t=>t.fw===fw&&t.gate===g);let gs=gateState(l);
+        if(simple)gs=!l.length?"empty":l.every(t=>t.done)?"done":cur===g?"cur":"next";
+        return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
+          h("span",{class:"g",text:"Гейт "+g}),h("span",{class:"t",text:name}),h("span",{class:"p",text:l.length?`${l.filter(t=>t.done).length}/${l.length}`:"нет задач"}),
+          !simple&&l.some(t=>t.review)?h("span",{class:"p",text:l.filter(t=>t.review).every(t=>t.done)?"проверен ✓":"ждёт проверки"}):null);
+      })),fw===2&&!simple?h("p",{class:"rule",text:"Продвижение стартует после гейта 2 Ф1: семантику и структуру готовим во время внедрения. Страницы публикуются (гейт 2) только когда в Ф1 нет открытых P1."}):null);
+    }));
+  }
+
+  function thread(t,side){
+    const open=openThread===t.id;
+    const list=t.comments;
+    const btn=h("button",{class:"icon"+(list.length?" has":""),type:"button","aria-expanded":String(open),onclick:()=>{openThread=open?null:t.id;render();}},list.length?`Комментарии · ${list.length}`:"Комментировать");
+    if(!open)return {btn,box:null};
+    const box=h("div",{class:"thread"},
+      ...list.map(c=>h("div",{class:"cmt "+(c.side||"team")},h("div",{class:"cmt-h"},h("b",{text:c.side==="studio"?"Студия":"Подрядчик"}),h("span",{class:"muted mono",text:" · "+fmtStamp(c.at)+(c.by&&!DEMO?" · "+who(c.by):"")})),h("div",{class:"cmt-t",text:c.text}))),
+      canWrite?h("form",{class:"cmt-form",onsubmit:e=>{e.preventDefault();const inp=e.target.querySelector("textarea");const text=inp.value.trim();if(!text)return;
+        write(()=>db.collection("comments").add({site:t.site,task:t.id,text,side,by:me||(DEMO?side:""),at:nowISO()})).then(ok=>{if(ok){inp.value="";}});}},
+        h("textarea",{rows:"2",placeholder:side==="studio"?"Ответ или вопрос подрядчику":"Ответ студии","aria-label":"Комментарий"}),h("button",{class:"btn sm",type:"submit"},"Отправить")):null);
+    return {btn,box};
+  }
+
+  // ---------- вид подрядчика ----------
   function reviewBlock(t){
     const st=siteTasks(t.site),same=x=>x.fw===t.fw&&x.gate===t.gate&&x.id!==t.id&&(x.cycle||"")===(t.cycle||"");
     const open=st.filter(x=>same(x)&&!x.done&&!x.review);
@@ -330,64 +424,42 @@ h3{margin:0;font-size:13px;font-weight:600}
   function setDone(t,val){
     let override=false;
     if(val&&t.review){const b=reviewBlock(t);if(b){if(b.hard||overrideArm!==t.id){toast(b.msg);if(!b.hard){overrideArm=t.id;setTimeout(()=>{if(overrideArm===t.id)overrideArm=null;},6000);}render();return;}override=true;overrideArm=null;}}
-    const data=val?{done:true,doneAt:new Date().toISOString(),doneBy:me||""}:{done:false,doneAt:"",doneBy:""};
-    write(()=>db.doc("tasks/"+t.id).update(data)).then(ok=>{if(ok)log(t.site,override?"review_override":val?"done":"reopened",{task:t.id,title:t.title});});
+    const data=val?{done:true,doneAt:nowISO(),doneBy:me||(DEMO?"team":"")}:{done:false,doneAt:"",doneBy:""};
+    write(async()=>{await db.doc("tasks/"+t.id).update(data);if(!val&&t.mark&&t.mark.done)await db.doc("studio/"+t.id).set({...t.mark,done:false});})
+      .then(ok=>{if(ok)log(t.site,override?"review_override":val?"done":"reopened",{task:t.id,title:t.title});});
   }
   const PRIOS=["P1","P2","P3",""];
-  function cyclePrio(t){const n=PRIOS[(PRIOS.indexOf(t.prio||"")+1)%PRIOS.length];write(()=>db.doc("tasks/"+t.id).update({prio:n})).then(ok=>{if(ok)log(t.site,"prio",{task:t.id,title:t.title,detail:n||"без приоритета"});});}
+  function cyclePrio(t){const n=PRIOS[(PRIOS.indexOf(t.prio||"")+1)%PRIOS.length];write(()=>saveInternal(t,{prio:n})).then(ok=>{if(ok)log(t.site,"prio",{task:t.id,title:t.title,detail:n||"без приоритета"});});}
   function taskRow(t){
     const s=status(t),isDel=pendingDelete===t.id;
-    const closed=t.done&&t.doneAt?h("span",{class:"closed",text:"Закрыто "+fmtStamp(t.doneAt)+(t.doneBy?" · "+who(t.doneBy):"")}):null;
+    const closed=t.done&&t.doneAt?h("span",{class:"closed",text:(t.byStudio?"Студия · ":"Закрыто ")+fmtStamp(t.doneAt)+(t.doneBy&&!t.byStudio?" · "+who(t.doneBy):"")}):null;
+    const th=thread(t,"team");
     return h("div",{class:"task "+s.c},
       h("input",{type:"checkbox",checked:t.done,"aria-label":"Выполнено: "+t.title,onchange:e=>setDone(t,e.target.checked)}),
-      h("div",{class:"body"},h("span",{class:"title",text:t.title}),h("span",{class:"info"},h("button",{class:"prio "+(t.prio||""),type:"button",title:"Приоритет: нажмите, чтобы сменить","aria-label":"Приоритет "+(t.prio||"не задан"),onclick:()=>cyclePrio(t)},t.prio||"P–"),t.review?h("span",{class:"rev",text:"Проверка гейта"}):null,h("span",{class:"status "+s.c,text:s.label}),h("span",{text:t.owner||"Без ответственного"}),closed,t.note?h("span",{text:t.note}):null)),
+      h("div",{class:"body"},h("span",{class:"title",text:t.title}),
+        h("span",{class:"info"},h("button",{class:"prio "+(t.prio||""),type:"button",title:"Приоритет: нажмите, чтобы сменить","aria-label":"Приоритет "+(t.prio||"не задан"),onclick:()=>cyclePrio(t)},t.prio||"P–"),
+          t.review?h("span",{class:"rev",text:"Проверка гейта"}):null,t.approval?h("span",{class:"rev appr",text:"Утверждение студии"}):null,
+          h("span",{class:"status "+s.c,text:s.label}),h("span",{text:t.owner||"Без ответственного"}),closed,t.note?h("span",{text:t.note}):null,th.btn),
+        th.box),
       h("div",{class:"actions"},
         h("input",{class:"date",type:"date",value:t.due||"","aria-label":"Срок",onchange:e=>{const v=e.target.value;write(()=>db.doc("tasks/"+t.id).update({due:v})).then(ok=>{if(ok)log(t.site,"due",{task:t.id,title:t.title,detail:v?fmtDate(v):"без срока"});});}}),
-        h("button",{class:"icon"+(t.flag?" on":""),type:"button","aria-pressed":String(!!t.flag),title:"Красный флаг",onclick:()=>write(()=>db.doc("tasks/"+t.id).update(t.flag?{flag:false}:{flag:true,prio:"P1"})).then(ok=>{if(ok)log(t.site,t.flag?"unflag":"flag",{task:t.id,title:t.title});})},t.flag?"Флаг ✕":"Флаг"),
-        isDel?h("button",{class:"icon danger",type:"button",onclick:()=>{pendingDelete=null;write(()=>db.doc("tasks/"+t.id).delete(),"Задача удалена").then(ok=>{if(ok)log(t.site,"deleted",{task:t.id,title:t.title});});}},"Удалить?")
+        h("button",{class:"icon"+(t.flag?" on":""),type:"button","aria-pressed":String(!!t.flag),title:"Красный флаг",onclick:()=>write(()=>saveInternal(t,t.flag?{flag:false}:{flag:true,prio:"P1"})).then(ok=>{if(ok)log(t.site,t.flag?"unflag":"flag",{task:t.id,title:t.title});})},t.flag?"Флаг ✕":"Флаг"),
+        isDel?h("button",{class:"icon danger",type:"button",onclick:()=>{pendingDelete=null;write(async()=>{await db.doc("tasks/"+t.id).delete();await db.doc("internal/"+t.id).delete();},"Задача удалена").then(ok=>{if(ok)log(t.site,"deleted",{task:t.id,title:t.title});});}},"Удалить?")
              :h("button",{class:"icon",type:"button","aria-label":"Удалить задачу",onclick:()=>{pendingDelete=t.id;render();setTimeout(()=>{if(pendingDelete===t.id){pendingDelete=null;render();}},4000);}},"×")));
   }
 
   function setProjectStatus(s,st,extra){
-    const data={status:st,statusAt:new Date().toISOString(),statusBy:me||"",...(extra||{})};
+    const data={status:st,statusAt:nowISO(),statusBy:me||"",...(extra||{})};
     if(st==="paused"){data.pausedAt=data.statusAt;data.pausedBy=me||"";}
     write(()=>db.doc("sites/"+s.id).update(data),"Статус: "+PSTATUS[st]).then(ok=>{if(ok)log(s.id,"p_"+st,{title:s.name,detail:extra&&extra.pauseNote||""});});
   }
-
-  function projectHead(s,st){
-    const ps=pstat(s);
-    const btns=[];
-    if(ps==="active"){btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=!pausing;editing=false;render();}},"Пауза"),h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"done")},"Завершить"));}
-    else{btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"active",{pauseNote:""})},"Вернуть в работу"));}
-    if(ps!=="archived")btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"archived")},"В архив"));
-    else btns.push(delArm===s.id?h("button",{class:"btn ghost danger",type:"button",onclick:()=>deleteProject(s)},"Удалить навсегда?")
-      :h("button",{class:"btn ghost",type:"button",title:"Удалить проект вместе с задачами и историей",onclick:()=>{delArm=s.id;render();setTimeout(()=>{if(delArm===s.id){delArm=null;render();}},5000);}},"Удалить"));
-    if(ps==="active")btns.push(h("button",{class:"btn ghost",type:"button",title:"Задачи ежемесячного цикла по уровню проекта. До 5-го числа — на текущий месяц, позже — на следующий",onclick:()=>monthTasks(s)},"+ Задачи месяца"));
-    btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{editing=!editing;pausing=false;render();}},editing?"Закрыть":"Изменить"));
-    const head=h("div",{class:"site-head"},
-      h("div",{style:"min-width:0"},h("div",{class:"title-row"},h("h2",{text:s.name}),h("span",{class:"pstatus "+ps,text:PSTATUS[ps]})),h("div",{class:"site-meta"},
-        s.client?h("span",{text:"Заказчик: "+s.client}):null,h("span",{text:"Уровень "+(s.level||"—")}),s.platform?h("span",{text:s.platform}):null,s.segment?h("span",{text:s.segment}):null,
-        s.startDate?h("span",{text:"Старт "+fmtDate(s.startDate)}):null,
-        s.url?h("a",{href:s.url,target:"_blank",rel:"noopener",text:"открыть сайт"}):null)),
-      h("div",{class:"head-actions"},h("span",{class:"muted mono",text:`${st.filter(t=>t.done).length}/${st.length} задач`}),...btns));
-    const parts=[head,regCard(s)];
-    if(ps==="paused")parts.push(h("div",{class:"banner"},h("b",{text:"На паузе"}),` с ${fmtStamp(s.pausedAt)}`+(s.pausedBy?` · ${who(s.pausedBy)}`:"")+(s.pauseNote?` · причина: `:""),s.pauseNote?h("span",{text:s.pauseNote}):null,h("span",{class:"muted",text:" Сроки задач не горят красным и оранжевым, пока проект на паузе."})));
-    if(pausing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();const note=$("pause-note").value.trim();pausing=false;setProjectStatus(s,"paused",{pauseNote:note});}},
-      h("input",{id:"pause-note",type:"text",class:"grow",placeholder:"Причина паузы, например ждём материалы от заказчика","aria-label":"Причина паузы"}),h("button",{class:"btn",type:"submit"},"Поставить на паузу"),h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=false;render();}},"Отмена")));
-    if(editing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();const data={name:$("pe-name").value.trim()||s.name,url:$("pe-url").value.trim(),client:$("pe-client").value.trim(),level:$("pe-level").value,platform:$("pe-platform").value.trim(),segment:$("pe-segment").value.trim(),startDate:$("pe-start").value};
-        for(const [k,,pair] of REG){if(pair){data[k+"Before"]=$("pe-"+k+"Before").value.trim();data[k+"Now"]=$("pe-"+k+"Now").value.trim();}else data[k]=$("pe-"+k).value.trim();}
-        editing=false;write(()=>db.doc("sites/"+s.id).update(data),"Карточка сохранена").then(ok=>{if(ok)log(s.id,"p_edited",{title:data.name});});}},
-      h("input",{id:"pe-name",type:"text",value:s.name||"","aria-label":"Название"}),h("input",{id:"pe-url",type:"url",value:s.url||"",placeholder:"https://","aria-label":"Адрес сайта"}),
-      h("input",{id:"pe-client",type:"text",value:s.client||"",placeholder:"Заказчик","aria-label":"Заказчик"}),
-      h("select",{id:"pe-level","aria-label":"Уровень"},...["A","B","C"].map(l=>h("option",{value:l,selected:(s.level||"B")===l},"Уровень "+l))),
-      h("input",{id:"pe-platform",type:"text",value:s.platform||"",placeholder:"Платформа","aria-label":"Платформа"}),h("input",{id:"pe-segment",type:"text",value:s.segment||"",placeholder:"Сегмент","aria-label":"Сегмент"}),
-      h("input",{id:"pe-start",type:"date",value:s.startDate||"","aria-label":"Дата старта"}),
-      h("div",{class:"card-edit"},...REG.flatMap(([k,l,pair])=>pair?[["Before",l.replace(", до → сейчас",": до")],["Now",l.replace(", до → сейчас",": сейчас")]].map(([sfx,lab])=>h("label",null,h("span",{class:"k",text:lab}),h("input",{id:"pe-"+k+sfx,type:"text",value:s[k+sfx]||""})))
-        :[h("label",null,h("span",{class:"k",text:l}),h("input",{id:"pe-"+k,type:k==="nextCheck"?"date":"text",value:s[k]||""}))])),
-      h("button",{class:"btn",type:"submit"},"Сохранить")));
-    return parts;
+  function deleteProject(s){
+    delArm=null;const st=rawTasks.filter(t=>t.site===s.id),ev=history.filter(e=>e.site===s.id),cm=comments.filter(c=>c.site===s.id);
+    write(async()=>{for(const t of st){await db.doc("tasks/"+t.id).delete();await db.doc("internal/"+t.id).delete();await db.doc("studio/"+t.id).delete();}
+      for(const c of cm)await db.doc("comments/"+c.id).delete();for(const e of ev)await db.doc("history/"+e.id).delete();
+      await db.doc("siteInternal/"+s.id).delete();await db.doc("sites/"+s.id).delete();
+      selected=null;try{localStorage.removeItem("crm-site");}catch(e){}},`Проект ${s.name} удалён`);
   }
-
   function regCard(s){
     const cells=REG.map(([k,l,pair])=>{
       let v,c="v";
@@ -399,16 +471,53 @@ h3{margin:0;font-size:13px;font-weight:600}
     });
     const same=s.executor&&s.reviewer&&s.executor.trim().toLowerCase()===s.reviewer.trim().toLowerCase();
     const filled=REG.filter(([k,,pair])=>pair?(s[k+"Before"]||s[k+"Now"]):s[k]).length;
-    const box=h("details",{class:"regbox"},h("summary",null,"Карточка реестра ",h("span",{class:"mono muted",text:`(${filled}/${REG.length})`}),same?h("span",{class:"muted",text:" · нарушены «четыре глаза»"}):null),
+    const box=h("details",{class:"regbox"},h("summary",null,"Карточка реестра ",h("span",{class:"mono muted",text:`(${filled}/${REG.length})`}),h("span",{class:"muted",text:" · видна только команде"}),same?h("span",{class:"muted",text:" · нарушены «четыре глаза»"}):null),
       h("div",{class:"card"},...cells,same?h("div",{class:"warn",text:"Исполнитель и проверяющий — один человек: нарушен принцип «четырёх глаз»."}):null));
     if(regOpen||window.innerWidth>700&&regOpen!==false)box.open=true;box.addEventListener("toggle",()=>{regOpen=box.open;});return box;
   }
+  function reportsToText(r){return (r||[]).map(x=>x.title+" | "+x.url).join("\n");}
+  function textToReports(s){return s.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.lastIndexOf("|");return i>0?{title:l.slice(0,i).trim(),url:l.slice(i+1).trim()}:{title:l,url:l};});}
+  function projectHead(s,st){
+    const ps=pstat(s);
+    const btns=[];
+    if(ps==="active"){btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=!pausing;editing=false;render();}},"Пауза"),h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"done")},"Завершить"));}
+    else{btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"active",{pauseNote:""})},"Вернуть в работу"));}
+    if(ps!=="archived")btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"archived")},"В архив"));
+    else btns.push(delArm===s.id?h("button",{class:"btn ghost danger",type:"button",onclick:()=>deleteProject(s)},"Удалить навсегда?")
+      :h("button",{class:"btn ghost",type:"button",title:"Удалить проект вместе с задачами, комментариями и историей",onclick:()=>{delArm=s.id;render();setTimeout(()=>{if(delArm===s.id){delArm=null;render();}},5000);}},"Удалить"));
+    if(ps==="active")btns.push(h("button",{class:"btn ghost",type:"button",title:"Задачи ежемесячного цикла по уровню проекта. До 5-го числа — на текущий месяц, позже — на следующий",onclick:()=>monthTasks(s)},"+ Задачи месяца"));
+    btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{editing=!editing;pausing=false;render();}},editing?"Закрыть":"Изменить"));
+    const head=h("div",{class:"site-head"},
+      h("div",{style:"min-width:0"},h("div",{class:"title-row"},h("h2",{text:s.name}),h("span",{class:"pstatus "+ps,text:PSTATUS[ps]})),h("div",{class:"site-meta"},
+        s.client?h("span",{text:"Заказчик: "+s.client}):null,h("span",{text:"Уровень "+(s.level||"—")}),s.platform?h("span",{text:s.platform}):null,s.segment?h("span",{text:s.segment}):null,
+        s.startDate?h("span",{text:"Старт "+fmtDate(s.startDate)}):null,
+        s.url&&s.url!=="#"?h("a",{href:s.url,target:"_blank",rel:"noopener",text:"открыть сайт"}):null)),
+      h("div",{class:"head-actions"},h("span",{class:"muted mono",text:`${st.filter(t=>t.done).length}/${st.length} задач`}),...btns));
+    const parts=[head,regCard(s)];
+    if(ps==="paused")parts.push(h("div",{class:"banner"},h("b",{text:"На паузе"}),` с ${fmtStamp(s.pausedAt)}`+(s.pausedBy?` · ${who(s.pausedBy)}`:"")+(s.pauseNote?` · причина: `:""),s.pauseNote?h("span",{text:s.pauseNote}):null,h("span",{class:"muted",text:" Сроки задач не горят красным и оранжевым, пока проект на паузе."})));
+    if(pausing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();const note=$("pause-note").value.trim();pausing=false;setProjectStatus(s,"paused",{pauseNote:note});}},
+      h("input",{id:"pause-note",type:"text",class:"grow",placeholder:"Причина паузы, например ждём материалы от заказчика","aria-label":"Причина паузы"}),h("button",{class:"btn",type:"submit"},"Поставить на паузу"),h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=false;render();}},"Отмена")));
+    if(editing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();
+        const pub={name:$("pe-name").value.trim()||s.name,url:$("pe-url").value.trim(),client:$("pe-client").value.trim(),level:$("pe-level").value,platform:$("pe-platform").value.trim(),segment:$("pe-segment").value.trim(),startDate:$("pe-start").value,reports:textToReports($("pe-reports").value)};
+        const priv={};for(const [k,,pair] of REG){if(pair){priv[k+"Before"]=$("pe-"+k+"Before").value.trim();priv[k+"Now"]=$("pe-"+k+"Now").value.trim();}else priv[k]=$("pe-"+k).value.trim();}
+        editing=false;write(async()=>{await db.doc("sites/"+s.id).update(pub);await saveSiteInt(s,priv);},"Карточка сохранена").then(ok=>{if(ok)log(s.id,"p_edited",{title:pub.name});});}},
+      h("input",{id:"pe-name",type:"text",value:s.name||"","aria-label":"Название"}),h("input",{id:"pe-url",type:"url",value:s.url||"",placeholder:"https://","aria-label":"Адрес сайта"}),
+      h("input",{id:"pe-client",type:"text",value:s.client||"",placeholder:"Заказчик","aria-label":"Заказчик"}),
+      h("select",{id:"pe-level","aria-label":"Уровень"},...["A","B","C"].map(l=>h("option",{value:l,selected:(s.level||"B")===l},"Уровень "+l))),
+      h("input",{id:"pe-platform",type:"text",value:s.platform||"",placeholder:"Платформа","aria-label":"Платформа"}),h("input",{id:"pe-segment",type:"text",value:s.segment||"",placeholder:"Сегмент","aria-label":"Сегмент"}),
+      h("input",{id:"pe-start",type:"date",value:s.startDate||"","aria-label":"Дата старта"}),
+      h("label",{class:"wide"},h("span",{class:"k",text:"Отчёты для студии — по строке: название | ссылка. Студия видит этот список"}),h("textarea",{id:"pe-reports",rows:"3"},reportsToText(s.reports))),
+      h("div",{class:"card-edit"},h("span",{class:"k wide",text:"Карточка реестра — видна только команде"}),...REG.flatMap(([k,l,pair])=>pair?[["Before",l.replace(", до → сейчас",": до")],["Now",l.replace(", до → сейчас",": сейчас")]].map(([sfx,lab])=>h("label",null,h("span",{class:"k",text:lab}),h("input",{id:"pe-"+k+sfx,type:"text",value:s[k+sfx]||""})))
+        :[h("label",null,h("span",{class:"k",text:l}),h("input",{id:"pe-"+k,type:k==="nextCheck"?"date":"text",value:s[k]||""}))])),
+      h("button",{class:"btn",type:"submit"},"Сохранить")));
+    return parts;
+  }
   function monthTasks(s){
-    const t=today();let y=t.getFullYear(),m=t.getMonth();if(t.getDate()>5){m++;if(m>11){m=0;y++;}} // цикл месяца начинается 1-го числа; после 5-го планируем следующий месяц
+    const t=today();let y=t.getFullYear(),m=t.getMonth();if(t.getDate()>5){m++;if(m>11){m=0;y++;}}
     const key=`${y}-${String(m+1).padStart(2,"0")}`;
     if(tasks.some(x=>x.site===s.id&&x.cycle===key)){toast("Задачи на этот месяц уже созданы");return;}
     const lv=s.level||"B",L=LEVEL[lv]||LEVEL.B,q=m%3===0;
-    const mn=new Date(y,m,1).toLocaleDateString("ru-RU",{month:"long"}),pre=mn.charAt(0).toUpperCase()+mn.slice(1)+" "+y+" · ";
+    const mn=new Date(y,m,1).toLocaleDateString("ru-RU",{month:"long"}),pre=cap(mn)+" "+y+" · ";
     const list=[[2,"Сбор данных: Search Console, Core Web Vitals, AI-запросы","Аналитик",3],
       ...((lv!=="C"||q)?[[2,`Контрольные AI-запросы: ${L.ai}`,"Аналитик",3]]:[]),
       [2,"Разбор красных флагов, технические — в Ф1","Менеджер",5],
@@ -416,42 +525,27 @@ h3{margin:0;font-size:13px;font-weight:600}
       ...(lv==="C"?[[2,q?"Мониторинг и обновление одной страницы (квартал)":"Мониторинг позиций и индексации","SEO-специалист",25]]:[]),
       [1,"Еженедельные замеры Lighthouse: главная + 2–3 страницы","Тех. специалист",28],[1,"Search Console: ошибки индексации, Core Web Vitals, новые 404","SEO-специалист",5],
       ...(q?[[1,"Квартальный прогон чек-листа аудита","SEO-специалист",20]]:[]),
-      [2,"Проверка гейта 5 за месяц","Проверяющий",28,1],[2,"Отчёт студии и план на следующий месяц","Менеджер",30]];
+      [2,"Проверка гейта 5 за месяц","Проверяющий",28,1],[2,"Отчёт студии и план на следующий месяц","Менеджер",30],[2,"Ответы студии на вопросы из отчёта","Студия",33]];
     const last=new Date(y,m+1,0).getDate();
-    write(async()=>{for(const [fw,title,owner,day,rev] of list){await db.collection("tasks").add({site:s.id,fw,gate:5,title:pre+title,owner,due:iso(new Date(y,m,Math.min(day,last))),flag:false,prio:"",review:!!rev,cycle:key,done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()});}
+    write(async()=>{for(const [fw,title,owner,day,rev] of list){const due=day>last?iso(new Date(y,m+1,day-last)):iso(new Date(y,m,day));
+        await db.collection("tasks").add({site:s.id,fw,gate:5,title:pre+title,owner,due,review:!!rev,approval:false,cycle:key,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}
       log(s.id,"cycle",{title:s.name,detail:pre.replace(" · ","")});},"Созданы задачи: "+pre.replace(" · ",""));
   }
-  function deleteProject(s){
-    delArm=null;const st=siteTasks(s.id),ev=history.filter(e=>e.site===s.id);
-    write(async()=>{for(const t of st)await db.doc("tasks/"+t.id).delete();for(const e of ev)await db.doc("history/"+e.id).delete();await db.doc("sites/"+s.id).delete();
-      selected=null;try{localStorage.removeItem("crm-site");}catch(e){}},`Проект ${s.name} удалён`);
-  }
   function historyBlock(s){
-    const ev=history.filter(e=>e.site===s.id).slice(0,40);
-    return h("details",{class:"history"},h("summary",null,"История проекта ",h("span",{class:"mono muted",text:`(${ev.length}${ev.length===40?"+":""})`})),
-      ev.length?h("ol",{class:"hist"},...ev.map(e=>h("li",null,h("span",{class:"mono muted",text:fmtStamp(e.at)}),h("span",null,h("b",{text:(w=>w.charAt(0).toUpperCase()+w.slice(1))(e.by?who(e.by):"кто-то")})," "+(ACTIONS[e.action]||e.action)+(e.title&&!String(e.action).startsWith("p_")?" «":" "),e.title&&!String(e.action).startsWith("p_")?h("span",{text:e.title}):null,e.title&&!String(e.action).startsWith("p_")?"»":"",e.detail?h("span",{class:"muted",text:" · "+e.detail}):null))))
-        :h("p",{class:"note",text:"Здесь появятся действия команды: закрытие задач, флаги, сроки, пауза проекта."}));
+    const ev=[...history.filter(e=>e.site===s.id),
+      ...Object.entries(marks).filter(([id,m])=>m.site===s.id&&m.at).map(([id,m])=>{const t=tasks.find(x=>x.id===id);return {at:m.at,by:m.by,action:m.done?(t&&t.approval?"studio_approved":"studio_done"):"studio_undo",title:t?t.title:"",studio:true};}),
+      ...comments.filter(c=>c.site===s.id).map(c=>{const t=tasks.find(x=>x.id===c.task);return {at:c.at,by:c.by,action:"comment",title:t?t.title:"",detail:c.text.slice(0,80)+(c.text.length>80?"…":""),studio:c.side==="studio"};})]
+      .sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,60);
+    return h("details",{class:"history"},h("summary",null,"История проекта ",h("span",{class:"mono muted",text:`(${ev.length}${ev.length===60?"+":""})`})),
+      ev.length?h("ol",{class:"hist"},...ev.map(e=>{const p=String(e.action).startsWith("p_")||e.action==="cycle";return h("li",null,h("span",{class:"mono muted",text:fmtStamp(e.at)}),h("span",null,h("b",{text:e.studio?"Студия":cap(e.by?who(e.by):"кто-то")})," "+(ACTIONS[e.action]||e.action)+(e.title&&!p?" «":" "),e.title&&!p?h("span",{text:e.title}):null,e.title&&!p?"»":"",e.detail?h("span",{class:"muted",text:" · "+e.detail}):null));}))
+        :h("p",{class:"note",text:"Здесь появятся действия команды и студии: закрытие задач, утверждения, комментарии, флаги, сроки, пауза проекта."}));
   }
 
-  function renderSite(){
-    const box=$("site");
-    const pool=sites.filter(s=>tab==="all"||pstat(s)===tab);
-    const s=sites.find(x=>x.id===selected)||pool[0]||sites[0];
-    if(!s){box.replaceChildren(h("div",{class:"empty",text:sitesLoaded?"Добавьте проект, чтобы начать.":"Загружаем…"}));return;}
-    selected=s.id;
+  function renderTeamSite(s){
     const st=siteTasks(s.id);
-    const rails=h("div",{class:"rails"},...[1,2].map(fw=>{
-      const cur=currentGate(st,fw);
-      return h("div",{class:"rail"},h("h3",{text:FW[fw].name}),h("div",{class:"rail-row"},...FW[fw].gates.map((name,g)=>{
-        const l=st.filter(t=>t.fw===fw&&t.gate===g),gs=gateState(l);
-        return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
-          h("span",{class:"g",text:"Гейт "+g}),h("span",{class:"t",text:name}),h("span",{class:"p",text:l.length?`${l.filter(t=>t.done).length}/${l.length}`:"нет задач"}),
-          l.some(t=>t.review)?h("span",{class:"p",text:l.filter(t=>t.review).every(t=>t.done)?"проверен ✓":"ждёт проверки"}):null);
-      })),fw===2?h("p",{class:"rule",text:"Продвижение стартует после гейта 2 Ф1: семантику и структуру готовим во время внедрения. Страницы публикуются (гейт 2) только когда в Ф1 нет открытых P1."}):null);
-    }));
-    const chips=[["all","Все"],["red","Красные"],["p1","P1 открытые"],["orange","Скоро срок"],["open","Открытые"],["done","Выполненные"]];
+    const chips=[["all","Все"],["red","Красные"],["p1","P1 открытые"],["studio","Ждёт от студии"],["orange","Скоро срок"],["open","Открытые"],["done","Выполненные"]];
     const toolbar=h("div",{class:"toolbar"},...chips.map(([k,l])=>h("button",{class:"chip",type:"button","aria-pressed":String(filter===k),onclick:()=>{filter=k;render();}},k==="red"?h("i",{class:"dot red"}):k==="orange"?h("i",{class:"dot orange"}):null,l)));
-    const pass=t=>{const c=status(t).c;return filter==="all"||(filter==="red"&&c==="red")||(filter==="orange"&&c==="orange")||(filter==="open"&&!t.done)||(filter==="p1"&&!t.done&&t.prio==="P1")||(filter==="done"&&t.done);};
+    const pass=t=>{const c=status(t).c;return filter==="all"||(filter==="red"&&c==="red")||(filter==="orange"&&c==="orange")||(filter==="open"&&!t.done)||(filter==="p1"&&!t.done&&t.prio==="P1")||(filter==="studio"&&!t.done&&isStudioTask(t))||(filter==="done"&&t.done);};
     const groups=h("div",{class:"groups"});let shown=0;
     for(const fw of [1,2]){
       const fwTasks=st.filter(t=>t.fw===fw&&pass(t));if(!fwTasks.length)continue;
@@ -466,8 +560,9 @@ h3{margin:0;font-size:13px;font-weight:600}
     if(!shown)groups.append(h("div",{class:"empty",text:tasksLoaded?(st.length?"Под этот фильтр задач нет.":"Задач пока нет. Добавьте первую ниже."):"Загружаем задачи…"}));
     const add=h("form",{class:"add",onsubmit:e=>{e.preventDefault();
       const title=$("nt-title").value.trim();if(!title){$("nt-title").focus();return;}
-      const data={site:s.id,fw:Number($("nt-fw").value),gate:Number($("nt-gate").value),title,owner:$("nt-owner").value,due:$("nt-due").value,flag:$("nt-flag").checked,prio:$("nt-flag").checked?"P1":$("nt-prio").value,review:$("nt-owner").value==="Проверяющий"&&/^Проверка гейта/.test(title),done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()};
-      write(async()=>{const ref=await db.collection("tasks").add(data);$("nt-title").value="";$("nt-flag").checked=false;log(s.id,"created",{task:ref.id,title});},"Задача добавлена");}},
+      const owner=$("nt-owner").value,flag=$("nt-flag").checked,prio=flag?"P1":$("nt-prio").value;
+      const data={site:s.id,fw:Number($("nt-fw").value),gate:Number($("nt-gate").value),title,owner,due:$("nt-due").value,review:owner==="Проверяющий"&&/^Проверка гейта/.test(title),approval:owner==="Студия"&&$("nt-appr").checked,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()};
+      write(async()=>{const ref=await db.collection("tasks").add(data);if(flag||prio)await db.doc("internal/"+ref.id).set({note:"",prio,flag});$("nt-title").value="";$("nt-flag").checked=false;$("nt-appr").checked=false;log(s.id,"created",{task:ref.id,title});},"Задача добавлена");}},
       h("h3",{text:"Новая задача"}),
       h("div",{class:"form"},
         h("input",{id:"nt-title",class:"grow",type:"text",placeholder:"Что сделать","aria-label":"Название задачи"}),
@@ -477,18 +572,106 @@ h3{margin:0;font-size:13px;font-weight:600}
         h("select",{id:"nt-prio","aria-label":"Приоритет"},...[["","Без приоритета"],["P1","P1"],["P2","P2"],["P3","P3"]].map(([v,l])=>h("option",{value:v},l))),
         h("input",{id:"nt-due",type:"date","aria-label":"Срок"}),
         h("label",{class:"chip"},h("input",{id:"nt-flag",type:"checkbox"}),"Красный флаг"),
+        h("label",{class:"chip",title:"Для задач студии: кнопка «Утвердить» вместо «Готово»"},h("input",{id:"nt-appr",type:"checkbox"}),"Утверждение"),
         h("button",{class:"btn",type:"submit"},"Добавить")));
-    box.replaceChildren(...projectHead(s,st),rails,toolbar,groups,historyBlock(s),add);
-    fillGates();
+    return [...projectHead(s,st),rails(st,false),toolbar,groups,historyBlock(s),add];
   }
   function fillGates(){const fw=Number(($("nt-fw")||{}).value||1),sel=$("nt-gate");if(!sel)return;const keep=sel.value;sel.replaceChildren(...FW[fw].gates.map((n,g)=>h("option",{value:String(g)},`Гейт ${g}. ${n}`)));if(keep&&Number(keep)<6)sel.value=keep;}
 
+  function renderTeamTiles(){
+    const act=new Set(sites.filter(s=>pstat(s)==="active").map(s=>s.id));
+    const open=tasks.filter(t=>!t.done&&act.has(t.site));
+    const red=open.filter(t=>status(t).c==="red").length,orange=open.filter(t=>status(t).c==="orange").length,waitStudio=open.filter(isStudioTask).length;
+    const paused=sites.filter(s=>pstat(s)==="paused").length;
+    const all=tasks.filter(t=>act.has(t.site)),done=all.filter(t=>t.done).length,pct=all.length?Math.round(done/all.length*100):0;
+    const tile=(cls,num,label,fn)=>h("button",{class:"tile "+cls,type:"button",onclick:fn},h("b",{text:num}),h("span",{text:label}));
+    $("tiles").replaceChildren(
+      tile("",String(act.size),paused?`проектов в работе · ${paused} на паузе`:"проектов в работе",()=>{tab="active";render();}),
+      tile("red",String(red),"красных задач",()=>{filter="red";render();}),
+      tile("orange",String(orange),"срок через 3 дня или меньше",()=>{filter="orange";render();}),
+      tile("",String(waitStudio),"ждут от студии",()=>{filter="studio";render();}),
+      tile("green",pct+"%",`выполнено в активных (${done} из ${all.length})`,()=>{filter="done";render();}));
+  }
+
+  // ---------- вид студии ----------
+  function studioAct(t,val){
+    if(!canWrite){toast("У вас доступ только для просмотра");render();return;}
+    write(()=>db.doc("studio/"+t.id).set({site:t.site,done:val,at:nowISO(),by:me||(DEMO?"studio":"")}),val?(t.approval?"Утверждено":"Отмечено как выполненное"):"Возвращено в работу");
+  }
+  function studioRow(t,showSite){
+    const s=status(t);const th=thread(t,"studio");const site=siteOf(t);
+    const team=t.done&&!t.byStudio;
+    const act=t.done?(team?h("span",{class:"muted",text:"Закрыто подрядчиком"}):(canWrite?h("button",{class:"btn ghost sm",type:"button",onclick:()=>studioAct(t,false)},"Вернуть"):null))
+      :(canWrite?h("button",{class:"btn sm",type:"button",onclick:()=>studioAct(t,true)},t.approval?"Утвердить":"Готово"):null);
+    return h("div",{class:"task "+s.c},
+      h("i",{class:"dot "+(s.c==="done"?"grey":s.c),style:"margin-top:6px"}),
+      h("div",{class:"body"},h("span",{class:"title",text:t.title}),
+        h("span",{class:"info"},showSite&&site?h("b",{text:site.name}):null,t.approval?h("span",{class:"rev appr",text:"Утверждение"}):null,h("span",{class:"status "+s.c,text:s.label}),
+          t.due&&!t.done?h("span",{text:"срок "+fmtDate(t.due)}):null,t.done&&t.doneAt?h("span",{class:"closed",text:fmtStamp(t.doneAt)}):null,th.btn),th.box),
+      h("div",{class:"actions"},act));
+  }
+  function renderStudioTiles(){
+    const act=new Set(sites.filter(s=>pstat(s)==="active").map(s=>s.id));
+    const mine=tasks.filter(t=>isStudioTask(t)&&act.has(t.site));const open=mine.filter(t=>!t.done);
+    const over=open.filter(t=>status(t).c==="red").length,soon=open.filter(t=>status(t).c==="orange").length,appr=open.filter(t=>t.approval).length;
+    const tile=(cls,num,label,fn)=>h("button",{class:"tile "+cls,type:"button",onclick:fn},h("b",{text:num}),h("span",{text:label}));
+    $("tiles").replaceChildren(
+      tile("",String(act.size),"сайтов в работе",()=>{studioAll=false;tab="active";render();}),
+      tile("",String(open.length),"ждут от студии — все сайты",()=>{studioAll=true;render();}),
+      tile("red",String(over),"просрочено",()=>{studioAll=true;render();}),
+      tile("orange",String(soon),"срок через 3 дня или меньше",()=>{studioAll=true;render();}),
+      tile("",String(appr),"ждут утверждения",()=>{studioAll=true;render();}));
+  }
+  function renderStudioAll(){
+    const act=new Set(sites.filter(s=>pstat(s)==="active").map(s=>s.id));
+    const open=tasks.filter(t=>isStudioTask(t)&&!t.done&&act.has(t.site)).sort((a,b)=>String(a.due||"9").localeCompare(String(b.due||"9")));
+    return [h("div",{class:"site-head"},h("div",null,h("h2",{text:"Ждёт от студии"}),h("div",{class:"site-meta"},h("span",{text:"Все сайты в работе, по сроку"})))),
+      h("div",{class:"groups"},h("div",{class:"group"},...(open.length?open.map(t=>studioRow(t,true)):[h("div",{class:"empty",text:"Сейчас от студии ничего не нужно."})])))];
+  }
+  function renderStudioSite(s){
+    const st=siteTasks(s.id),ps=pstat(s);
+    const mine=st.filter(isStudioTask),open=mine.filter(t=>!t.done).sort((a,b)=>(!!b.approval-!!a.approval)||String(a.due||"9").localeCompare(String(b.due||"9"))),done=mine.filter(t=>t.done).sort((a,b)=>String(b.doneAt||"").localeCompare(String(a.doneAt||"")));
+    const team=st.filter(t=>!isStudioTask(t));
+    const head=h("div",{class:"site-head"},h("div",{style:"min-width:0"},h("div",{class:"title-row"},h("h2",{text:s.name}),h("span",{class:"pstatus "+ps,text:PSTATUS[ps]})),
+      h("div",{class:"site-meta"},s.client?h("span",{text:"Заказчик: "+s.client}):null,h("span",{text:"Уровень "+(s.level||"—")}),s.platform?h("span",{text:s.platform}):null,s.startDate?h("span",{text:"Старт "+fmtDate(s.startDate)}):null,
+        s.url&&s.url!=="#"?h("a",{href:s.url,target:"_blank",rel:"noopener",text:"открыть сайт"}):null)),
+      h("div",{class:"head-actions"},h("span",{class:"muted mono",text:`работы подрядчика: ${team.filter(t=>t.done).length}/${team.length}`})));
+    const parts=[head];
+    if(ps==="paused")parts.push(h("div",{class:"banner"},h("b",{text:"На паузе"}),s.pauseNote?h("span",{text:" · "+s.pauseNote}):null));
+    parts.push(rails(st,true));
+    parts.push(h("div",{class:"groups"},
+      h("div",{class:"fw-title",text:"Ждёт от студии"}),
+      h("div",{class:"group"},...(open.length?open.map(t=>studioRow(t,false)):[h("div",{class:"empty",text:"По этому сайту от студии сейчас ничего не нужно."})])),
+      h("div",{class:"fw-title",text:"Отчёты"}),
+      h("div",{class:"group"},(s.reports&&s.reports.length)?h("ul",{class:"reports"},...s.reports.map(r=>h("li",null,h("a",{href:r.url,target:"_blank",rel:"noopener",text:r.title})))):h("p",{class:"note",text:"Отчёты появятся после аудита."})),
+      h("details",{class:"group plain"},h("summary",{class:"fw-title"},`Работы подрядчика · ${team.filter(t=>t.done).length}/${team.length}`),
+        ...[1,2].flatMap(fw=>[0,1,2,3,4,5].map(g=>{const l=team.filter(t=>t.fw===fw&&t.gate===g);if(!l.length)return null;
+          return h("div",{class:"mini",id:`g-${fw}-${g}`},h("h3",{text:`Ф${fw} · Гейт ${g}. ${FW[fw].gates[g]}`}),h("ul",null,...l.map(t=>h("li",{class:t.done?"ok":""},(t.done?"✓ ":"○ ")+t.title))));}))),
+      done.length?h("details",{class:"group plain"},h("summary",{class:"fw-title"},`Сделано студией · ${done.length}`),...done.map(t=>studioRow(t,false))):null));
+    return parts;
+  }
+
+  // ---------- рендер ----------
+  function renderSite(){
+    const box=$("site");
+    if(studioView()&&studioAll){box.replaceChildren(...renderStudioAll());return;}
+    const pool=sites.filter(s=>tab==="all"||pstat(s)===tab);
+    const s=sites.find(x=>x.id===selected)||pool[0]||sites[0];
+    if(!s){box.replaceChildren(h("div",{class:"empty",text:sitesLoaded?(studioView()?"Сайтов пока нет.":"Добавьте проект, чтобы начать."):"Загружаем…"}));return;}
+    selected=s.id;
+    box.replaceChildren(...(studioView()?renderStudioSite(s):renderTeamSite(s)));
+    if(!studioView())fillGates();
+  }
   function render(){
     const a=document.activeElement,keepId=a&&a.id,keepVal=keepId&&a.value;
+    const ta=a&&a.tagName==="TEXTAREA"&&a.closest(".thread")?a.value:null;
     const hist=document.querySelector(".history"),histOpen=hist&&hist.open;
-    renderTiles();renderSites();renderSite();
+    const det=[...document.querySelectorAll("details.plain")].map(d=>d.open);
+    rebuild();renderTop();(studioView()?renderStudioTiles:renderTeamTiles)();renderSites();renderSite();
     if(histOpen){const n=document.querySelector(".history");if(n)n.open=true;}
+    document.querySelectorAll("details.plain").forEach((d,i)=>{if(det[i])d.open=true;});
     if(keepId&&$(keepId)){const el=$(keepId);if(el.type!=="checkbox"&&keepVal!=null)el.value=keepVal;el.focus();}
+    if(ta!=null){const t=document.querySelector(".thread textarea");if(t){t.value=ta;t.focus();}}
     resolveNames();
   }
 
@@ -496,56 +679,99 @@ h3{margin:0;font-size:13px;font-weight:600}
   $("site-form").addEventListener("submit",e=>{e.preventDefault();if(!db){toast("Хранилище недоступно: войдите в claude.ai");return;}
     const name=$("sf-name").value.trim();if(!name)return;
     const start=$("sf-start").value||iso(today());
-    const data={name,url:/^https?:\/\//.test(name)?name:"https://"+name,client:$("sf-client").value.trim(),level:$("sf-level").value,platform:$("sf-platform").value.trim(),segment:$("sf-segment").value.trim(),executor:$("sf-executor").value.trim(),reviewer:$("sf-reviewer").value.trim(),startDate:start,status:"active",createdBy:me||"",createdAt:new Date().toISOString()};
+    const data={name,url:/^https?:\/\//.test(name)?name:"https://"+name,client:$("sf-client").value.trim(),level:$("sf-level").value,platform:$("sf-platform").value.trim(),segment:$("sf-segment").value.trim(),reports:[],startDate:start,status:"active",createdBy:me||"",createdAt:nowISO()};
+    const priv={executor:$("sf-executor").value.trim(),reviewer:$("sf-reviewer").value.trim()};
     const withTpl=$("sf-template").checked;
     write(async()=>{
       const ref=await db.collection("sites").add(data);
+      if(priv.executor||priv.reviewer)await db.doc("siteInternal/"+ref.id).set(priv);
       log(ref.id,"p_created",{title:name});
-      if(withTpl){const base=parse(start);for(const [fw,gate,title,owner,off,rev] of template(data.level)){const d=new Date(base);d.setDate(d.getDate()+off);await db.collection("tasks").add({site:ref.id,fw,gate,title,owner,due:iso(d),flag:false,prio:"",review:!!rev,done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()});}}
+      if(withTpl){const base=parse(start);for(const [fw,gate,title,owner,off,rev,appr] of template(data.level)){await db.collection("tasks").add({site:ref.id,fw,gate,title,owner,due:iso(addDays(base,off)),review:!!rev,approval:!!appr,done:false,doneAt:"",doneBy:"",createdBy:me||"",createdAt:nowISO()});}}
       selected=ref.id;tab="active";$("site-form").reset();$("site-form").hidden=true;},"Проект добавлен");});
 
-  render();
-  // Локальный режим (вне claude.ai): данные хранятся только в этом браузере
+  // ---------- демо-режим: локальное хранилище в браузере ----------
+  const DEMO_KEY="crm-demo-v2";
+  function demoSeed(){
+    const T=today(),D={sites:{},siteInternal:{},tasks:{},internal:{},studio:{},comments:{},history:{}};let n=0;
+    const mk=(id,site,lvl,startOff,doneUntil,extra)=>{
+      const start=addDays(T,-startOff);
+      D.sites[id]={name:site.name,url:"#",client:site.client,level:lvl,platform:"Webflow",segment:site.segment,startDate:iso(start),status:site.status||"active",reports:site.reports||[],pauseNote:site.pauseNote||"",pausedAt:site.status==="paused"?addDays(T,-3).toISOString():""};
+      D.siteInternal[id]=site.priv||{};
+      for(const [fw,gate,title,owner,off,rev,appr] of template(lvl)){const tid=id+"-"+(++n);
+        const done=(fw===1&&gate<doneUntil[0])||(fw===2&&gate<doneUntil[1]);
+        D.tasks[tid]={site:id,fw,gate,title,owner,due:iso(addDays(start,off)),review:!!rev,approval:!!appr,done:done&&owner!=="Студия",doneAt:done?addDays(start,off).toISOString():"",doneBy:done?"team":"",createdAt:start.toISOString()};
+        if(done&&owner==="Студия"){D.studio[tid]={site:id,done:true,at:addDays(start,off).toISOString(),by:"studio"};}
+        if(!done&&parse(D.tasks[tid].due)<T)D.tasks[tid].due=iso(addDays(T,5+(n%9)));
+      }
+      (extra||(()=>{}))(id,start);
+    };
+    mk("aurora",{name:"aurora-villas.demo",client:"Aurora Villas (вымышленный)",segment:"люкс, недвижимость, США",reports:[{title:"Отчёт аудита (пример)",url:"#"},{title:"Семантическое ядро (пример)",url:"#"}],
+      priv:{executor:"Анна",reviewer:"Игорь",contact:"Мария, менеджер студии",media:"Webflow; видео — Vimeo",niche:"аренда вилл",market:"США, английский",scoreBefore:"41",lcpBefore:"6,2 с",weightBefore:"18 МБ",nextCheck:iso(addDays(T,4))}},"A",34,[3,1],(id,start)=>{
+      let i=0;for(const [tid,t] of Object.entries(D.tasks)){if(t.site!==id||t.fw!==1||t.gate!==3)continue;i++;
+        if(i===1){D.internal[tid]={prio:"P1",flag:true,note:"видео первого экрана 14 МБ"};t.due=iso(addDays(T,-1));}
+        if(i===2)D.internal[tid]={prio:"P2",flag:false,note:""};}
+      for(const [tid,t] of Object.entries(D.tasks)){if(t.site===id&&t.owner==="Студия"&&!t.done&&!D.studio[tid]){t.due=iso(addDays(T,2));
+        D.comments["c1"]={site:id,task:tid,text:"Можно ли пережать видео без потери качества на больших экранах?",side:"studio",by:"studio",at:addDays(T,-1).toISOString()};
+        D.comments["c2"]={site:id,task:tid,text:"Да: делаем две версии, 1080p для компьютера и 720p для телефона. Разница на глаз не видна.",side:"team",by:"team",at:addDays(T,-1).toISOString()};break;}}});
+    mk("nord",{name:"atelier-nord.demo",client:"Atelier Nord (вымышленный)",segment:"дизайн интерьеров, Европа",priv:{executor:"Олег",reviewer:"Анна",niche:"дизайн интерьеров",market:"Германия, английский",scoreBefore:"55"}},"B",9,[1,0],(id)=>{
+      for(const [tid,t] of Object.entries(D.tasks)){if(t.site===id&&t.fw===1&&t.gate===1&&t.review){t.done=false;t.doneAt="";}}});
+    mk("marina",{name:"casa-marina.demo",client:"Casa Marina (вымышленный)",segment:"ресторан, локальный бизнес",status:"paused",pauseNote:"ждём доступы от заказчика",priv:{executor:"Игорь",reviewer:"Олег"}},"C",5,[0,0]);
+    return D;
+  }
   function localDb(){
-    const KEY="crm-local-db-v1";const SEED={"sites": {"mosaicist": {"client": "Mosaicist – House of Mosaic Arts", "level": "A", "name": "mosaicist.com", "platform": "Webflow", "segment": "люкс, США", "url": "https://mosaicist.com", "media": "Webflow; видео — Bunny", "niche": "мозаика ручной работы: бассейны, интерьеры, паблик-арт", "market": "США, английский", "exclusions": "продажа плитки, мелкий ремонт, укладка чужой мозаики, испанский", "scoreBefore": "58", "lcpBefore": "4,7 с", "weightBefore": "57 МБ", "nextCheck": "2026-11-17", "startDate": "2026-11-10", "createdBy": ""}, "raycorral": {"client": "Ray Corral", "createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "level": "B", "name": "raycorral.com", "platform": "Webflow", "segment": "персональный сайт художника, США", "startDate": "2026-11-13", "status": "active", "url": "https://raycorral.com", "media": "Webflow", "niche": "персональный бренд художника-мозаиста", "market": "США, английский", "scoreBefore": "31", "lcpBefore": "5,6 с", "weightBefore": "3,2 МБ", "nextCheck": "2026-11-17", "failReason": "гейт 1: замеры не по методике (2 страницы, 1 прогон)"}}, "tasks": {"rc-14": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "LCP 5,6 с на телефоне — выше порога 4 с", "owner": "Тех. специалист", "site": "raycorral", "title": "Главная картинка первого экрана с ленивой загрузкой", "prio": "P1"}, "mos-41": {"done": false, "doneAt": "", "due": "2026-12-20", "flag": false, "fw": 2, "gate": 3, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Первые 3 статьи по плану", "prio": "", "review": false, "doneBy": ""}, "mos-18": {"done": false, "doneAt": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Два хоста отвечают 200: основной домен + редирект", "prio": "P1", "doneBy": ""}, "rc-07": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-20", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "raycorral", "title": "Студия утвердила план задач", "prio": "", "review": false}, "mos-35": {"done": false, "doneAt": "", "due": "2026-12-05", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Страница /custom-pool-mosaics", "prio": "", "review": false, "doneBy": ""}, "rc-16": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Два хоста отвечают 200: основной домен + редирект", "prio": "P1"}, "rc-17": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "sitemap.xml отдаёт 404: включить карту сайта", "prio": "P1"}, "rc-22": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-25", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Опечатки в адресах: philantropy, miditerranean, тройной дефис — 301", "prio": "P2"}, "mos-01": {"done": false, "doneAt": "", "due": "2026-11-14", "flag": false, "fw": 1, "gate": 0, "note": "или студия загружает файлы сама", "owner": "Менеджер", "site": "mosaicist", "title": "Доступ к хранилищу видео (Bunny)", "prio": "", "review": false, "doneBy": ""}, "mos-02": {"done": false, "doneAt": "", "due": "2026-11-14", "flag": false, "fw": 1, "gate": 0, "note": "на сайте не подключена", "owner": "Менеджер", "site": "mosaicist", "title": "Доступ к Google Search Console", "prio": "", "review": false, "doneBy": ""}, "rc-23": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-28", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Структурированные данные (Person, VisualArtwork) и llms.txt", "prio": "P1"}, "mos-31": {"done": false, "doneAt": "", "due": "2026-11-20", "flag": false, "fw": 2, "gate": 0, "note": "ждёт доступа к Search Console", "owner": "Аналитик", "site": "mosaicist", "title": "Точка отсчёта в Search Console", "prio": "", "review": false, "doneBy": ""}, "rc-21": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-27", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Несколько H1 на каждой странице (до 10)", "prio": "P1"}, "rc-13": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-25", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "raycorral", "title": "Тяжёлый WebGL-фон: three.js r108 + Unicorn Studio", "prio": "P2"}, "mos-20": {"done": false, "doneAt": "", "due": "2026-11-21", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Ссылки в подвале на www-версию", "prio": "P2", "doneBy": ""}, "rc-28": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-12-04", "flag": false, "fw": 2, "gate": 1, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Семантика личного бренда: художник, мозаика, имя", "prio": "", "review": false}, "rc-02": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-17", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Менеджер", "site": "raycorral", "title": "Доступ к Google Search Console", "prio": "", "review": false}, "rc-30": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-12-18", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "raycorral", "title": "Тексты проектов от первого лица художника, без дублей с mosaicist.com", "prio": "", "review": false}, "rc-00": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": true, "doneAt": "2026-11-13T08:40:00Z", "doneBy": "", "due": "2026-11-13", "flag": false, "fw": 1, "gate": 0, "note": "Claude", "owner": "Менеджер", "site": "raycorral", "title": "Сайт заведён в реестр", "prio": "", "review": false}, "mos-30": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-12", "flag": false, "fw": 2, "gate": 0, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Уровень A, сегмент люкс, рынок США", "prio": "", "review": false, "doneBy": ""}, "mos-03": {"done": false, "doneAt": "", "due": "2026-11-17", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Резервная копия сайта перед изменениями", "prio": "", "review": false, "doneBy": ""}, "rc-24": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-12-04", "flag": false, "fw": 1, "gate": 4, "note": "", "owner": "Менеджер", "site": "raycorral", "title": "Повторные замеры и отчёт «было / стало»", "prio": "", "review": false}, "rc-11": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "raycorral", "title": "Библиотеки подключены дважды: GSAP ×2 + старый TweenMax, Lenis ×2", "prio": "P1"}, "mos-40": {"done": false, "doneAt": "", "due": "2026-12-08", "flag": false, "fw": 2, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Блог в Webflow CMS", "prio": "", "review": false, "doneBy": ""}, "mos-27": {"done": false, "doneAt": "", "due": "2026-12-03", "flag": false, "fw": 1, "gate": 4, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Повторные замеры на боевом сайте", "prio": "", "review": false, "doneBy": ""}, "mos-36": {"done": false, "doneAt": "", "due": "2026-12-10", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Страница стоимости и ценности", "prio": "", "review": false, "doneBy": ""}, "rc-06": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": true, "doneAt": "2026-11-13T09:42:47.726Z", "doneBy": "", "due": "2026-11-17", "flag": false, "fw": 1, "gate": 1, "note": "файла отчёта по raycorral пока нет — проверить, что передано студии", "owner": "Менеджер", "site": "raycorral", "title": "Отчёт аудита для студии"}, "mos-10": {"done": false, "doneAt": "", "due": "2026-11-14", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "mosaicist", "title": "Исходники видео от заказчика", "prio": "", "review": false, "doneBy": ""}, "mos-23": {"done": false, "doneAt": "", "due": "2026-11-25", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Старые адреса проектов 404: редиректы 301", "prio": "P2", "doneBy": ""}, "mos-29": {"done": false, "doneAt": "", "due": "2027-01-05", "flag": false, "fw": 1, "gate": 5, "note": "", "owner": "Проверяющий", "site": "mosaicist", "title": "Контроль через 30 дней: регрессии и индексация", "prio": "", "review": false, "doneBy": ""}, "mos-34": {"done": false, "doneAt": "", "due": "2026-11-20", "flag": false, "fw": 2, "gate": 1, "note": "", "owner": "Студия", "site": "mosaicist", "title": "Ядро утверждено студией", "prio": "", "review": false, "doneBy": ""}, "rc-31": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2027-03-21", "flag": false, "fw": 2, "gate": 4, "note": "", "owner": "Аналитик", "site": "raycorral", "title": "Отчёт за 90 дней после гейта 2"}, "rc-26": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-20", "flag": false, "fw": 2, "gate": 0, "note": "поставлен B по умолчанию", "owner": "Студия", "site": "raycorral", "title": "Уточнить у студии уровень (A/B/C) и сегмент", "prio": "", "review": false}, "mos-39": {"done": false, "doneAt": "", "due": "2026-12-19", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Наполнить Public Art и Interior Spaces", "prio": "", "review": false, "doneBy": ""}, "mos-09": {"done": false, "doneAt": "", "due": "2026-11-15", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "mosaicist", "title": "Студия утвердила план задач", "prio": "", "review": false, "doneBy": ""}, "mos-28": {"done": false, "doneAt": "", "due": "2026-12-04", "flag": false, "fw": 1, "gate": 4, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Отчёт «было / стало» для студии", "prio": "", "review": false, "doneBy": ""}, "rc-18": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "canonical нет ни на одной из 15 страниц", "prio": "P1"}, "rc-01": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": true, "doneAt": "2026-11-13T09:42:35.084Z", "doneBy": "", "due": "2026-11-17", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Менеджер", "site": "raycorral", "title": "Доступ к Webflow-проекту raycorral.com", "prio": "", "review": false}, "mos-25": {"done": false, "doneAt": "", "due": "2026-11-27", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Alt у всех изображений (0 из 544)", "prio": "P1", "doneBy": ""}, "mos-06": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-11", "flag": false, "fw": 1, "gate": 1, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Обход всех адресов и чек-лист аудита", "prio": "", "review": false, "doneBy": ""}, "mos-43": {"done": false, "doneAt": "", "due": "2026-12-10", "flag": false, "fw": 2, "gate": 3, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Google Business Profile: адреса в каталогах расходятся", "prio": "", "review": false, "doneBy": ""}, "mos-08": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-12", "flag": false, "fw": 1, "gate": 1, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Отчёт аудита передан студии", "prio": "", "review": false, "doneBy": ""}, "mos-05": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-11", "flag": false, "fw": 1, "gate": 1, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Замеры Lighthouse: главная + 5 страниц, телефон и компьютер", "prio": "", "review": false, "doneBy": ""}, "mos-24": {"done": false, "doneAt": "", "due": "2026-11-27", "flag": true, "fw": 1, "gate": 3, "note": "порог: ровно 1 H1 на страницу", "owner": "SEO-специалист", "site": "mosaicist", "title": "37 H1 на главной, кириллическая «С» в Catalogs", "prio": "P1", "doneBy": ""}, "mos-32": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-10", "flag": false, "fw": 2, "gate": 0, "note": "", "owner": "Аналитик", "site": "mosaicist", "title": "Базовый тест ответов AI (ChatGPT, Gemini)", "prio": "", "review": false, "doneBy": ""}, "rc-12": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-19", "flag": true, "fw": 1, "gate": 3, "note": "может пропасть в любой момент", "owner": "Тех. специалист", "site": "raycorral", "title": "Скрипт грузится с чужого демо-сайта tympanus.net", "prio": "P1"}, "mos-12": {"done": false, "doneAt": "", "due": "2026-11-18", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "mosaicist", "title": "Решение: длина главного видео (15–25 с)", "prio": "", "review": false, "doneBy": ""}, "rc-04": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-13", "flag": false, "fw": 1, "gate": 1, "note": "Claude 13.11: сделано по 1 прогону главной и About (телефон 31, компьютер ≈46, About 38) — по методике не хватает 4 страниц и медианы", "owner": "Тех. специалист", "site": "raycorral", "title": "Замеры: главная + 5 страниц, телефон и компьютер, медиана из 3 прогонов"}, "mos-26": {"done": false, "doneAt": "", "due": "2026-11-28", "flag": true, "fw": 1, "gate": 3, "note": "разметки нет совсем — красный флаг по порогам", "owner": "SEO-специалист", "site": "mosaicist", "title": "Структурированные данные и llms.txt", "prio": "P1", "doneBy": ""}, "mos-21": {"done": false, "doneAt": "", "due": "2026-11-21", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Тестовая копия webflow.io в поиске", "prio": "P2", "doneBy": ""}, "rc-10": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "почти всё время — скрипт Webflow Interactions", "owner": "Тех. специалист", "site": "raycorral", "title": "Главный поток заблокирован 169 с на телефоне: зацикленная анимация", "prio": "P1"}, "mos-37": {"done": false, "doneAt": "", "due": "2026-12-12", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Страница для архитекторов и застройщиков", "prio": "", "review": false, "doneBy": ""}, "mos-13": {"done": false, "doneAt": "", "due": "2026-11-20", "flag": true, "fw": 1, "gate": 3, "note": "красный флаг: > 10 МБ", "owner": "Тех. специалист", "site": "mosaicist", "title": "Вес главной 57 МБ: пережать главное видео", "prio": "P1", "doneBy": ""}, "mos-04": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-13", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Сайт заведён в реестр", "prio": "", "review": false, "doneBy": ""}, "rc-25": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2027-01-05", "flag": false, "fw": 1, "gate": 5, "note": "", "owner": "Проверяющий", "site": "raycorral", "title": "Контроль через 30 дней", "prio": "", "review": false}, "rc-05": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": true, "doneAt": "2026-11-13T08:40:00Z", "doneBy": "", "due": "2026-11-13", "flag": false, "fw": 1, "gate": 1, "note": "Claude: 15 адресов + чек-лист; полевых данных Google нет (лимит API), индекс не проверен — нужен доступ к Search Console", "owner": "SEO-специалист", "site": "raycorral", "title": "Обход адресов и чек-лист аудита на 100%"}, "mos-15": {"done": false, "doneAt": "", "due": "2026-11-20", "flag": true, "fw": 1, "gate": 3, "note": "LCP 4,7 с на телефоне — выше порога 4 с", "owner": "Тех. специалист", "site": "mosaicist", "title": "Заставка первого экрана без ленивой загрузки", "prio": "P1", "doneBy": ""}, "mos-11": {"done": false, "doneAt": "", "due": "2026-11-18", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "mosaicist", "title": "Решение: основной адрес сайта (с www или без)", "prio": "", "review": false, "doneBy": ""}, "mos-07": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-11", "flag": false, "fw": 1, "gate": 1, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Приоритеты P1–P3 по находкам", "prio": "", "review": false, "doneBy": ""}, "rc-08": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-20", "flag": false, "fw": 1, "gate": 2, "note": "", "owner": "Студия", "site": "raycorral", "title": "Решение: основной адрес сайта (с www или без)", "prio": "", "review": false}, "rc-15": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-25", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "raycorral", "title": "Изображения 400–600 КБ на About: WebP и размеры", "prio": "P2"}, "rc-19": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-26", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "raycorral", "title": "Meta description нет на 14 из 15 страниц", "prio": "P1"}, "mos-16": {"done": false, "doneAt": "", "due": "2026-11-24", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Перенос скриптов из head, плеер по клику", "prio": "P2", "doneBy": ""}, "rc-29": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-12-11", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "raycorral", "title": "Тонкие страницы: Work (49 слов), Media Kit (66)", "prio": "", "review": false}, "mos-22": {"done": false, "doneAt": "", "due": "2026-11-25", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Опечатка Carribbean и двойной дефис: адреса + 301", "prio": "P2", "doneBy": ""}, "mos-42": {"done": false, "doneAt": "", "due": "2026-12-15", "flag": false, "fw": 2, "gate": 3, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "FAQ и блок фактов о компании", "prio": "", "review": false, "doneBy": ""}, "mos-14": {"done": false, "doneAt": "", "due": "2026-11-20", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Видео виллы 142 МБ: загрузка только при прокрутке", "prio": "P1", "doneBy": ""}, "rc-09": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-20", "flag": false, "fw": 1, "gate": 2, "note": "тексты проектов дублируются", "owner": "Студия", "site": "raycorral", "title": "Решение: где основная версия проектов — здесь или на mosaicist.com", "prio": "", "review": false}, "mos-17": {"done": false, "doneAt": "", "due": "2026-11-24", "flag": false, "fw": 1, "gate": 3, "note": "", "owner": "Тех. специалист", "site": "mosaicist", "title": "Шрифты в WOFF2", "prio": "P2", "doneBy": ""}, "rc-03": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-18", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Тех. специалист", "site": "raycorral", "title": "Резервная копия сайта", "prio": "", "review": false}, "rc-27": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-27", "flag": false, "fw": 2, "gate": 0, "note": "", "owner": "Аналитик", "site": "raycorral", "title": "Точка отсчёта в Search Console", "prio": "", "review": false}, "mos-33": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-12", "flag": false, "fw": 2, "gate": 1, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "Семантическое ядро: 269 запросов", "prio": "", "review": false, "doneBy": ""}, "mos-44": {"done": false, "doneAt": "", "due": "2027-03-22", "flag": false, "fw": 2, "gate": 4, "note": "", "owner": "Аналитик", "site": "mosaicist", "title": "Отчёт за 90 дней после гейта 2", "doneBy": ""}, "rc-20": {"createdAt": "2026-11-13T08:40:00Z", "createdBy": "", "done": false, "doneAt": "", "doneBy": "", "due": "2026-11-27", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "Автор контента", "site": "raycorral", "title": "Alt пустой у всех изображений", "prio": "P1"}, "mos-00": {"done": true, "doneAt": "2026-11-11", "due": "2026-11-11", "flag": false, "fw": 1, "gate": 0, "note": "", "owner": "Менеджер", "site": "mosaicist", "title": "Доступ к Webflow получен", "prio": "", "review": false, "doneBy": ""}, "mos-38": {"done": false, "doneAt": "", "due": "2026-12-15", "flag": false, "fw": 2, "gate": 2, "note": "", "owner": "Автор контента", "site": "mosaicist", "title": "Тексты проектов 400–600 слов", "prio": "", "review": false, "doneBy": ""}, "mos-19": {"done": false, "doneAt": "", "due": "2026-11-21", "flag": true, "fw": 1, "gate": 3, "note": "", "owner": "SEO-специалист", "site": "mosaicist", "title": "sitemap.xml отдаёт 404: включить карту сайта", "prio": "P1", "doneBy": ""}, "mos-45": {"site": "mosaicist", "fw": 1, "gate": 1, "title": "Проверка гейта 1 по критериям", "owner": "Проверяющий", "due": "2026-11-17", "prio": "", "flag": false, "review": true, "done": false, "note": "замеры, чек-лист 100%, приоритеты у каждой находки", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-46": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Тестовая версия: метрики в порогах, визуальное сравнение, редиректы, 0 битых ссылок, разметка без ошибок", "owner": "Тех. специалист", "due": "2026-11-28", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-47": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Проверка гейта 3 по критериям", "owner": "Проверяющий", "due": "2026-11-29", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-48": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Студия посмотрела тестовую версию и дала добро на публикацию", "owner": "Студия", "due": "2026-12-01", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-49": {"site": "mosaicist", "fw": 1, "gate": 4, "title": "Карта сайта отправлена в Search Console", "owner": "SEO-специалист", "due": "2026-12-03", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-50": {"site": "mosaicist", "fw": 1, "gate": 5, "title": "Проверка гейта 5", "owner": "Проверяющий", "due": "2027-01-06", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-51": {"site": "mosaicist", "fw": 2, "gate": 0, "title": "Доступ к Google Analytics", "owner": "Менеджер", "due": "2026-11-14", "prio": "", "flag": false, "review": false, "done": false, "note": "на сайте не подключена", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-52": {"site": "mosaicist", "fw": 2, "gate": 0, "title": "Дополнить тест AI: Perplexity, всего 10 контрольных запросов (уровень A)", "owner": "Аналитик", "due": "2026-11-20", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-53": {"site": "mosaicist", "fw": 2, "gate": 1, "title": "Проверка гейта 1", "owner": "Проверяющий", "due": "2026-11-19", "prio": "", "flag": false, "review": true, "done": false, "note": "группы закреплены за страницами, минус-слова, приоритеты", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-54": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Внутренние ссылки и отправка новых страниц на индексацию", "owner": "SEO-специалист", "due": "2026-12-20", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-55": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Проверка гейта 2", "owner": "Проверяющий", "due": "2026-12-22", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-56": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "Контент-план на 3 месяца", "owner": "SEO-специалист", "due": "2026-12-15", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "mos-57": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "Проверка гейта 3", "owner": "Проверяющий", "due": "2026-12-22", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-32": {"site": "raycorral", "fw": 1, "gate": 1, "title": "Приоритеты P1–P3 по находкам, флаги по порогам", "owner": "SEO-специалист", "due": "2026-11-13", "prio": "", "flag": false, "review": false, "done": true, "note": "Claude", "doneAt": "2026-11-13T10:00:00Z", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-33": {"site": "raycorral", "fw": 1, "gate": 1, "title": "Проверка гейта 1 по критериям", "owner": "Проверяющий", "due": "2026-11-17", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-34": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Блокирующие скрипты в head: экономия ≈1 с на телефоне", "owner": "Тех. специалист", "due": "2026-11-21", "prio": "P1", "flag": true, "review": false, "done": false, "note": "порог: экономия больше 1 с", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-35": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Ссылки href=\"#\" (34) и ссылки на Google Drive/Docs и черновик статьи на Press и Media Kit", "owner": "SEO-специалист", "due": "2026-11-25", "prio": "P2", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-36": {"site": "raycorral", "fw": 1, "gate": 3, "title": "robots.txt пустой: добавить карту сайта; llms.txt; og:image на страницах", "owner": "SEO-специалист", "due": "2026-11-25", "prio": "P2", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-37": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Тестовая версия: метрики в порогах, визуальное сравнение, редиректы, 0 битых ссылок, разметка без ошибок", "owner": "Тех. специалист", "due": "2026-11-28", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-38": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Проверка гейта 3 по критериям", "owner": "Проверяющий", "due": "2026-11-29", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-39": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Студия посмотрела тестовую версию и дала добро на публикацию", "owner": "Студия", "due": "2026-12-01", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-40": {"site": "raycorral", "fw": 1, "gate": 4, "title": "Карта сайта отправлена в Search Console", "owner": "SEO-специалист", "due": "2026-12-03", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-41": {"site": "raycorral", "fw": 1, "gate": 5, "title": "Проверка гейта 5", "owner": "Проверяющий", "due": "2027-01-06", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-42": {"site": "raycorral", "fw": 2, "gate": 0, "title": "Доступ к Google Analytics", "owner": "Менеджер", "due": "2026-11-20", "prio": "", "flag": false, "review": false, "done": false, "note": "на сайте не установлена", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-43": {"site": "raycorral", "fw": 2, "gate": 0, "title": "Базовый тест AI: 5 запросов в ChatGPT, Gemini, Perplexity", "owner": "Аналитик", "due": "2026-11-27", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-44": {"site": "raycorral", "fw": 2, "gate": 0, "title": "Исключения заказчика — в карточке проекта", "owner": "Менеджер", "due": "2026-11-20", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-45": {"site": "raycorral", "fw": 2, "gate": 1, "title": "Группы запросов закреплены за страницами, минус-слова, приоритеты", "owner": "SEO-специалист", "due": "2026-12-04", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-46": {"site": "raycorral", "fw": 2, "gate": 1, "title": "Проверка гейта 1 (уровень B — без утверждения студией)", "owner": "Проверяющий", "due": "2026-12-05", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-47": {"site": "raycorral", "fw": 2, "gate": 2, "title": "Внутренние ссылки и отправка новых страниц на индексацию", "owner": "SEO-специалист", "due": "2026-12-19", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-48": {"site": "raycorral", "fw": 2, "gate": 2, "title": "Проверка гейта 2", "owner": "Проверяющий", "due": "2026-12-21", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-49": {"site": "raycorral", "fw": 2, "gate": 3, "title": "Блог и первые 2 статьи по плану", "owner": "Автор контента", "due": "2027-01-15", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-50": {"site": "raycorral", "fw": 2, "gate": 3, "title": "FAQ и блок фактов о художнике", "owner": "Автор контента", "due": "2027-01-10", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-51": {"site": "raycorral", "fw": 2, "gate": 3, "title": "Контент-план на 3 месяца", "owner": "SEO-специалист", "due": "2027-01-10", "prio": "", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-52": {"site": "raycorral", "fw": 2, "gate": 3, "title": "Проверка гейта 3", "owner": "Проверяющий", "due": "2027-01-18", "prio": "", "flag": false, "review": true, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}, "rc-53": {"site": "raycorral", "fw": 1, "gate": 3, "title": "Тонкие страницы проектов (~145 слов при пороге 150)", "owner": "Автор контента", "due": "2026-11-28", "prio": "P3", "flag": false, "review": false, "done": false, "note": "", "doneAt": "", "doneBy": "", "createdBy": "", "createdAt": "2026-11-13T10:00:00Z"}}, "history": {"fix-mos-1113": {"site": "mosaicist", "action": "p_edited", "title": "mosaicist.com", "by": "", "at": "2026-11-13T10:00:00Z", "detail": "Claude: сверка с фреймворками — приоритеты, флаги по порогам, проверки гейтов"}, "fix-rc-1113": {"site": "raycorral", "action": "p_edited", "title": "raycorral.com", "by": "", "at": "2026-11-13T10:00:00Z", "detail": "Claude: сверка с фреймворками — приоритеты, флаги по порогам, проверки гейтов"}}};
-    let data;try{data=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){}
-    const ids=Object.entries(SEED).flatMap(([c,o])=>Object.keys(o).map(id=>c+"/"+id));
-    if(!data){data=JSON.parse(JSON.stringify(SEED));}
-    else{
-      const fresh=!data._base&&Object.keys(data.history||{}).every(k=>k==="rc-created"||(SEED.history&&k in SEED.history)); // старая копия без действий пользователя
-      const seen=new Set(data._seeded||Object.values(SEED).flatMap(o=>Object.keys(o)).filter(k=>k.startsWith("mos")));
-      for(const key of ids){const [c,id]=key.split("/");const nv=SEED[c][id];data[c]=data[c]||{};const cur=data[c][id];
-        if(!cur){if(fresh||!seen.has(id))data[c][id]=JSON.parse(JSON.stringify(nv));continue;}
-        const base=data._base&&data._base[key];
-        if(fresh||(base&&JSON.stringify(cur)===base))data[c][id]=JSON.parse(JSON.stringify(nv));}
-    }
-    data._seeded=Object.values(SEED).flatMap(o=>Object.keys(o));
-    data._base={};for(const key of ids){const [c,id]=key.split("/");if(data[c]&&data[c][id])data._base[key]=JSON.stringify(data[c][id]);}
-    try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+    let data;try{data=JSON.parse(localStorage.getItem(DEMO_KEY)||"null");}catch(e){}
+    if(!data)data=demoSeed();
     const subs=[];
-    const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}subs.forEach(f=>f());};
+    const save=()=>{try{localStorage.setItem(DEMO_KEY,JSON.stringify(data));}catch(e){}subs.forEach(f=>f());};
+    save();
     const snap=(name,q)=>{let arr=Object.entries(data[name]||{}).map(([id,v])=>({id,v}));
       if(q.ob)arr.sort((a,b)=>String(a.v[q.ob]||"").localeCompare(String(b.v[q.ob]||""))*(q.dir==="desc"?-1:1));if(q.lim)arr=arr.slice(0,q.lim);
       return {docs:arr.map(x=>({id:x.id,exists:true,data:()=>x.v})),metadata:{fromCache:false,hasPendingWrites:false}};};
     const query=(name,q)=>({orderBy:(f,d)=>query(name,{...q,ob:f,dir:d}),limit:n=>query(name,{...q,lim:n}),
       onSnapshot:cb=>{const f=()=>cb(snap(name,q));subs.push(f);setTimeout(f,0);return()=>{const i=subs.indexOf(f);if(i>=0)subs.splice(i,1);};},
-      add:async v=>{const id=Math.random().toString(36).slice(2,12);(data[name]=data[name]||{})[id]=v;save();return {id};}});
+      add:async v=>{const id=Math.random().toString(36).slice(2,12);(data[name]=data[name]||{})[id]=JSON.parse(JSON.stringify(v));save();return {id};}});
     return {collection:name=>query(name,{}),doc:path=>{const [c,id]=path.split("/");return {
-      update:async v=>{data[c][id]={...data[c][id],...v};save();},delete:async()=>{delete data[c][id];save();}};}};
+      set:async v=>{(data[c]=data[c]||{})[id]=JSON.parse(JSON.stringify(v));save();},
+      update:async v=>{if(!data[c]||!data[c][id])throw new Error("нет документа");data[c][id]={...data[c][id],...v};save();},
+      delete:async()=>{if(data[c])delete data[c][id];save();}};},
+      reset:()=>{data=demoSeed();save();}};
   }
-  const LOCAL=!(window.claude&&window.claude.use);
-  if(LOCAL)$("conn").textContent="Локальный режим: изменения сохраняются только в этом браузере. Общий трекер команды открывается на claude.ai.";
-  const use=n=>LOCAL?Promise.resolve(n==="db"?localDb():null):window.claude.use(n);
-  use("user").then(async u=>{user=u;if(u){try{me=await u.id();}catch(e){}render();}});
-  use("db").then(d=>{
-    db=d;
-    if(!db){$("conn").textContent="Хранилище недоступно: войдите в claude.ai под своим аккаунтом, чтобы видеть и отмечать задачи.";sitesLoaded=tasksLoaded=true;render();return;}
+  function resetDemo(){if(db&&db.reset){db.reset();selected=null;toast("Демо-данные сброшены");}}
+
+  // ---------- подключение ----------
+  function subscribe(){
     const timer=setTimeout(()=>{$("conn").textContent="Данные пока не загрузились. Проверьте соединение — страница обновится сама, когда хранилище ответит.";},10000);
-    const settle=meta=>{if(!meta.fromCache){clearTimeout(timer);if(!LOCAL)$("conn").textContent="";}};
+    const settle=meta=>{if(!meta.fromCache){clearTimeout(timer);if(!DEMO)$("conn").textContent="";}};
     const onErr=e=>{clearTimeout(timer);$("conn").textContent="Связь с хранилищем прервалась: "+(e&&e.message||"ошибка")+". Перезагрузите страницу.";};
-    db.collection("sites").onSnapshot(snap=>{sites=snap.docs.map(d=>({id:d.id,...d.data()}));sitesLoaded=true;settle(snap.metadata);render();},onErr);
-    db.collection("tasks").onSnapshot(snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()}));tasksLoaded=true;settle(snap.metadata);render();},onErr);
-    db.collection("history").orderBy("at","desc").limit(500).onSnapshot(snap=>{history=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr);
-  });
+    const map=(snap)=>Object.fromEntries(snap.docs.map(d=>[d.id,d.data()]));
+    db.collection("sites").onSnapshot(snap=>{rawSites=snap.docs.map(d=>({id:d.id,...d.data()}));sitesLoaded=true;settle(snap.metadata);render();},onErr);
+    db.collection("tasks").onSnapshot(snap=>{rawTasks=snap.docs.map(d=>({id:d.id,...d.data()}));tasksLoaded=true;settle(snap.metadata);render();},onErr);
+    db.collection("studio").onSnapshot(snap=>{marks=map(snap);render();},onErr);
+    db.collection("comments").onSnapshot(snap=>{comments=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr);
+    if(isAdmin||DEMO){
+      db.collection("internal").onSnapshot(snap=>{internal=map(snap);render();},onErr);
+      db.collection("siteInternal").onSnapshot(snap=>{siteInt=map(snap);render();},onErr);
+      db.collection("history").orderBy("at","desc").limit(500).onSnapshot(snap=>{history=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr);
+    }
+  }
+
+  render();
+  if(DEMO){
+    try{viewAs=localStorage.getItem("crm-view")||"team";}catch(e){}
+    db=localDb();isAdmin=true;canWrite=true;
+    $("conn").textContent="Демо-режим. Боевой трекер с общей базой и разделением доступа работает на claude.ai.";
+    subscribe();render();
+  }else{
+    const use=n=>window.claude.use(n);
+    Promise.all([use("user"),use("db")]).then(async([u,d])=>{
+      user=u;db=d;
+      if(u){try{me=await u.id();}catch(e){}try{isAdmin=await u.canEdit();}catch(e){}try{const c=await u.can("data.write");canWrite=c!==false;}catch(e){}}
+      viewAs=isAdmin?"team":"studio";
+      if(isAdmin){try{const v=localStorage.getItem("crm-view");if(v==="studio")viewAs="studio";}catch(e){}}
+      if(!db){$("conn").textContent="Хранилище недоступно: войдите в claude.ai под своим аккаунтом, чтобы видеть и отмечать задачи.";sitesLoaded=tasksLoaded=true;render();return;}
+      subscribe();render();
+    });
+  }
 })();
+
 </script>
