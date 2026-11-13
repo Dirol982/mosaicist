@@ -221,6 +221,22 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:14px;padding-bottom:18px;position:sticky;bottom:0;background:var(--surface)}
 @media (max-width:520px){dialog.dlg{width:100vw;max-width:100vw;max-height:100vh;height:100vh;border-radius:0;margin:0}}
 .gate .p.hold{color:var(--orange)}
+.tree-bar{display:flex;gap:6px;padding:8px 18px 0;justify-content:flex-end}
+.tree-bar .chip{font-size:11px;padding:3px 9px}
+.node{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%}
+.node:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+.fw-title.node{padding:14px 18px 6px;font:600 11px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fw-title.node .p{text-transform:none;letter-spacing:0;font-weight:500}
+.group-head.node{padding:8px 0 6px;border-bottom:1px solid var(--line)}
+.group-head.node:hover h3{text-decoration:underline;text-underline-offset:3px}
+.group.folded .group-head.node{border-bottom-color:transparent}
+.group.folded{padding-bottom:2px}
+.caret{width:12px;flex:none;color:var(--muted);font-size:12px;text-align:center}
+.group-head .hold{font:500 11px var(--f-mono);color:var(--orange)}
+.group-head .sm{font-size:12px}
+.task.dim{opacity:.6}
+.more{all:unset;cursor:pointer;display:block;padding:8px 0 4px 34px;font-size:12px;color:var(--ink)}
+.more:hover{text-decoration:underline}
 </style>
 
 <div class="app">
@@ -356,7 +372,7 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
   let db=null,user=null,me=null,names={},asked=new Set(),isAdmin=false,canWrite=true,viewAs="team";
   let rawSites=[],siteInt={},rawTasks=[],internal={},marks={},comments=[],history=[];
   let sites=[],tasks=[],selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
-  let overrideArm=null,regOpen=null,delArm=null,openThread=null,studioAll=false,openTask=null;
+  let overrideArm=null,regOpen=null,delArm=null,openThread=null,studioAll=false,openTask=null,treeOpen={},showAllGate=new Set();
   try{ selected=localStorage.getItem("crm-site"); tab=localStorage.getItem("crm-tab")||"active"; }catch(e){}
 
   const $=id=>document.getElementById(id);
@@ -368,6 +384,7 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
   function jumpTo(ids){
     const st=new Set(ids);if(tasks.some(t=>st.has(t.id)&&!document.getElementById("t-"+t.id)))filter="all";
     const first=tasks.find(t=>t.id===ids[0]);if(first&&first.site!==selected){selected=first.site;studioAll=false;}
+    for(const id of ids){const t=tasks.find(x=>x.id===id);if(t){treeOpen[t.site+"-"+t.fw]=true;treeOpen[t.site+"-"+t.fw+"-"+t.gate]=true;showAllGate.add(t.site+"-"+t.fw+"-"+t.gate);}}
     render();
     requestAnimationFrame(()=>{const els=ids.map(id=>document.getElementById("t-"+id)).filter(Boolean);if(!els.length)return;
       els[0].scrollIntoView({behavior:"smooth",block:"center"});
@@ -486,7 +503,7 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
         if(simple)gs=!l.length?"empty":l.every(t=>t.done)?"done":cur===g?"cur":"next";
         return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const open=l.filter(t=>!t.done&&(!simple||isStudioTask(t))).map(t=>t.id);if(open.length&&!simple){jumpTo(open);return;}const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
           h("span",{class:"g",text:"Гейт "+g}),h("span",{class:"t",text:name}),h("span",{class:"p",text:l.length?`${l.filter(t=>t.done).length}/${l.length}`:"нет задач"}),
-          !simple&&p1Hold(st,fw,g)?h("span",{class:"p hold",text:"ждёт закрытия P1"}):null);
+          !simple&&p1Hold(st,fw,g)&&l.every(t=>t.done)?h("span",{class:"p hold",text:"ждёт закрытия P1"}):null);
       })),fw===2&&!simple?h("p",{class:"rule",text:"Продвижение стартует после гейта 2 Ф1: семантику и структуру готовим во время внедрения. Страницы публикуются (гейт 2) только когда в Ф1 нет открытых P1."}):null);
     }));
   }
@@ -636,18 +653,38 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
     const chips=[["all","Все"],["red","Красные"],["p1","P1 открытые"],["studio","Ждёт от студии"],["orange","Скоро срок"],["open","Открытые"],["done","Выполненные"]];
     const toolbar=h("div",{class:"toolbar"},...chips.map(([k,l])=>h("button",{class:"chip",type:"button","aria-pressed":String(filter===k),onclick:()=>{filter=k;render();}},k==="red"?h("i",{class:"dot red"}):k==="orange"?h("i",{class:"dot orange"}):null,l)));
     const pass=t=>{const c=status(t).c;return filter==="all"||(filter==="red"&&c==="red")||(filter==="orange"&&c==="orange")||(filter==="open"&&!t.done)||(filter==="p1"&&!t.done&&t.prio==="P1")||(filter==="studio"&&!t.done&&isStudioTask(t))||(filter==="done"&&t.done);};
-    const groups=h("div",{class:"groups"});let shown=0;
+    // Дерево: фреймворк → гейт → задачи. Гейт раскрывается по клику; скрытые фильтром задачи гейта — по кнопке
+    const groups=h("div",{class:"groups tree"});let shown=0;
+    const sortT=l=>l.sort((a,b)=>(a.done-b.done)||RANK[status(b).c]-RANK[status(a).c]||String(a.prio||"P9").localeCompare(String(b.prio||"P9"))||String(a.due||"9").localeCompare(String(b.due||"9")));
     for(const fw of [1,2]){
-      const fwTasks=st.filter(t=>t.fw===fw&&pass(t));if(!fwTasks.length)continue;
-      groups.append(h("div",{class:"fw-title",text:FW[fw].name}));
+      const fwAll=st.filter(t=>t.fw===fw);if(!fwAll.length)continue;
+      const fk=s.id+"-"+fw,fwOpen=treeOpen[fk]!==false,fwShown=fwAll.filter(pass).length;
+      groups.append(h("button",{class:"fw-title node",type:"button","aria-expanded":String(fwOpen),onclick:()=>{treeOpen[fk]=!fwOpen;render();}},
+        h("span",{class:"caret"},fwOpen?"▾":"▸"),FW[fw].name,h("span",{class:"p",text:` · ${fwAll.filter(t=>t.done).length}/${fwAll.length}`+(filter!=="all"?` · показано ${fwShown}`:"")})));
+      if(!fwOpen)continue;
       for(let g=0;g<6;g++){
-        const l=fwTasks.filter(t=>t.gate===g).sort((a,b)=>(a.done-b.done)||RANK[status(b).c]-RANK[status(a).c]||String(a.prio||"P9").localeCompare(String(b.prio||"P9"))||String(a.due||"9").localeCompare(String(b.due||"9")));
-        if(!l.length)continue;
-        const all=st.filter(t=>t.fw===fw&&t.gate===g),gs=gateState(all);shown+=l.length;
-        groups.append(h("div",{class:"group",id:`g-${fw}-${g}`},h("div",{class:"group-head"},h("i",{class:"dot "+(gs==="done"?"green":gs==="empty"?"grey":gs)}),h("h3",{text:`Гейт ${g}. ${FW[fw].gates[g]}`}),h("span",{class:"p",text:`${all.filter(t=>t.done).length}/${all.length}`})),...l.map(taskRow)));
+        const all=st.filter(t=>t.fw===fw&&t.gate===g);if(!all.length)continue;
+        const key=s.id+"-"+fw+"-"+g,match=sortT(all.filter(pass)),gs=gateState(all);
+        const open=treeOpen[key]!=null?treeOpen[key]:match.length>0;
+        const full=showAllGate.has(key)||filter==="all";
+        const rows=open?(full?sortT([...all]):match):[];shown+=rows.length;
+        const hidden=all.length-match.length;
+        const hold=p1Hold(st,fw,g)&&all.every(t=>t.done);
+        groups.append(h("div",{class:"group"+(open?"":" folded"),id:`g-${fw}-${g}`},
+          h("button",{class:"group-head node",type:"button","aria-expanded":String(open),onclick:()=>{treeOpen[key]=!open;render();}},
+            h("span",{class:"caret"},open?"▾":"▸"),h("i",{class:"dot "+(gs==="done"?"green":gs==="empty"?"grey":gs)}),h("h3",{text:`Гейт ${g}. ${FW[fw].gates[g]}`}),
+            hold?h("span",{class:"hold",text:"ждёт закрытия P1"}):null,
+            filter!=="all"&&!open?h("span",{class:"muted sm",text:match.length?`${match.length} по фильтру`:"по фильтру нет"}):null,
+            h("span",{class:"p",text:`${all.filter(t=>t.done).length}/${all.length}`})),
+          ...(open?rows.map(t=>{const r=taskRow(t);if(filter!=="all"&&!pass(t))r.classList.add("dim");return r;}):[]),
+          open&&filter!=="all"&&hidden>0?h("button",{class:"more",type:"button",onclick:()=>{if(full)showAllGate.delete(key);else showAllGate.add(key);render();}},
+            full?"Скрыть задачи гейта вне фильтра":`Показать остальные задачи гейта · ${hidden}`):null));
       }
     }
-    if(!shown)groups.append(h("div",{class:"empty",text:tasksLoaded?(st.length?"Под этот фильтр задач нет.":"Задач пока нет. Добавьте первую ниже."):"Загружаем задачи…"}));
+    if(!st.length)groups.append(h("div",{class:"empty",text:tasksLoaded?"Задач пока нет. Добавьте первую ниже.":"Загружаем задачи…"}));
+    else if(!shown&&filter!=="all")groups.append(h("p",{class:"note",text:"Под этот фильтр задач нет. Раскройте гейт, чтобы увидеть все его задачи."}));
+    const treeBar=h("div",{class:"tree-bar"},h("button",{class:"chip",type:"button",onclick:()=>{for(const fw of [1,2]){treeOpen[s.id+"-"+fw]=true;for(let g=0;g<6;g++)treeOpen[s.id+"-"+fw+"-"+g]=true;}render();}},"Раскрыть всё"),
+      h("button",{class:"chip",type:"button",onclick:()=>{for(const fw of [1,2])for(let g=0;g<6;g++)treeOpen[s.id+"-"+fw+"-"+g]=false;render();}},"Свернуть гейты"));
     const add=h("form",{class:"add",onsubmit:e=>{e.preventDefault();
       const title=$("nt-title").value.trim();if(!title){$("nt-title").focus();return;}
       const owner=$("nt-owner").value,flag=$("nt-flag").checked,prio=flag?"P1":$("nt-prio").value;
@@ -664,7 +701,7 @@ dialog.dlg::backdrop{background:rgba(10,14,22,.45)}
         h("label",{class:"chip"},h("input",{id:"nt-flag",type:"checkbox"}),"Красный флаг"),
         h("label",{class:"chip",title:"Для задач студии: кнопка «Утвердить» вместо «Готово»"},h("input",{id:"nt-appr",type:"checkbox"}),"Утверждение"),
         h("button",{class:"btn",type:"submit"},"Добавить")));
-    return [...projectHead(s,st),rails(st,false),toolbar,groups,historyBlock(s),add];
+    return [...projectHead(s,st),rails(st,false),toolbar,treeBar,groups,historyBlock(s),add];
   }
   function fillGates(){const fw=Number(($("nt-fw")||{}).value||1),sel=$("nt-gate");if(!sel)return;const keep=sel.value;sel.replaceChildren(...FW[fw].gates.map((n,g)=>h("option",{value:String(g)},`Гейт ${g}. ${n}`)));if(keep&&Number(keep)<6)sel.value=keep;}
 
