@@ -1,0 +1,441 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Реестр сайтов студии</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: рабочая панель — сводка сверху, слева список сайтов, справа карточка сайта: гейты двух фреймворков и задачи по гейтам */
+:root{
+  --bg:#eef0f3; --surface:#ffffff; --sunk:#f5f6f8; --fg:#151a24; --muted:#5d6574; --line:#dcdfe5;
+  --ink:#1e3a8a;
+  --red:#c42b2b; --red-bg:#fde8e8; --orange:#c25e00; --orange-bg:#feefdc; --green:#1b7f47; --green-bg:#e2f3e9; --grey:#8a919e; --grey-bg:#eceef1;
+  --f-body:"Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e121a; --surface:#161c27; --sunk:#121722; --fg:#e7eaf0; --muted:#98a0ae; --line:#283041;
+  --ink:#8fa8ff;
+  --red:#ff7676; --red-bg:#3b1a1d; --orange:#ffad5c; --orange-bg:#3a2813; --green:#5fd394; --green-bg:#13301f; --grey:#7c8494; --grey-bg:#1f2533; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e121a; --surface:#161c27; --sunk:#121722; --fg:#e7eaf0; --muted:#98a0ae; --line:#283041;
+  --ink:#8fa8ff;
+  --red:#ff7676; --red-bg:#3b1a1d; --orange:#ffad5c; --orange-bg:#3a2813; --green:#5fd394; --green-bg:#13301f; --grey:#7c8494; --grey-bg:#1f2533; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.app{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;justify-content:space-between}
+h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.01em}
+h2{margin:0;font-size:18px;font-weight:700}
+h3{margin:0;font-size:13px;font-weight:600}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.green{background:var(--green)}.dot.grey{background:var(--grey)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;text-align:left;cursor:pointer}
+.tile b{font:600 26px/1.1 var(--f-mono)}
+.tile span{font-size:12px;color:var(--muted)}
+.tile.red b{color:var(--red)}.tile.orange b{color:var(--orange)}.tile.green b{color:var(--green)}
+.tile:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.main{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.sites{display:flex;flex-direction:column}
+.sites-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.site-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;width:100%}
+.site-item:last-child{border-bottom:0}
+.site-item[aria-current="true"]{background:var(--sunk);box-shadow:inset 3px 0 0 var(--ink)}
+.site-item .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-item .sub{grid-column:2/4;font-size:12px;color:var(--muted)}
+.badge{font:600 11px/1 var(--f-mono);padding:4px 6px;border-radius:4px;background:var(--grey-bg);color:var(--muted)}
+.counts{display:flex;gap:6px}
+.cnt{font:600 11px/1 var(--f-mono);padding:3px 6px;border-radius:999px}
+.cnt.red{background:var(--red-bg);color:var(--red)}.cnt.orange{background:var(--orange-bg);color:var(--orange)}
+.site{display:flex;flex-direction:column;gap:0}
+.site-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;justify-content:space-between}
+.site-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.site-meta a{color:var(--ink)}
+.rails{display:grid;grid-template-columns:1fr;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.rail{display:flex;flex-direction:column;gap:6px}
+.rail-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.gate{border:1px solid var(--line);border-radius:6px;padding:7px 8px;display:flex;flex-direction:column;gap:3px;background:var(--surface);cursor:pointer;text-align:left;min-width:0}
+.gate .g{font:600 11px/1 var(--f-mono);color:var(--muted)}
+.gate .t{font-size:12px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gate .p{font:500 11px/1 var(--f-mono);color:var(--muted)}
+.gate.done{background:var(--green-bg);border-color:var(--green)}
+.gate.done .g{color:var(--green)}
+.gate.red{border-color:var(--red);box-shadow:inset 0 3px 0 var(--red)}
+.gate.orange{border-color:var(--orange);box-shadow:inset 0 3px 0 var(--orange)}
+.gate.green{border-color:var(--green);box-shadow:inset 0 3px 0 var(--green)}
+.gate.empty{opacity:.55}
+.gate.current .g::after{content:" · сейчас";color:var(--ink)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line)}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.groups{display:flex;flex-direction:column}
+.fw-title{padding:14px 18px 6px;font:600 11px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.group{padding:0 18px 10px}
+.group-head{display:flex;align-items:center;gap:10px;padding:8px 0 6px;border-bottom:1px solid var(--line)}
+.group-head .p{margin-left:auto;font:500 12px var(--f-mono);color:var(--muted)}
+.task{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:9px 0 9px 10px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.task:last-child{border-bottom:0}
+.task.red{border-left-color:var(--red);background:linear-gradient(90deg,var(--red-bg),transparent 40%)}
+.task.orange{border-left-color:var(--orange);background:linear-gradient(90deg,var(--orange-bg),transparent 40%)}
+.task.green{border-left-color:var(--green)}
+.task.done{border-left-color:var(--grey)}
+.task.done .title{text-decoration:line-through;color:var(--muted)}
+.task input[type=checkbox]{width:18px;height:18px;margin:1px 0 0;accent-color:var(--green);cursor:pointer}
+.task .body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.task .title{overflow-wrap:anywhere}
+.task .info{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);align-items:center}
+.status{font:600 11px/1 var(--f-mono);padding:4px 7px;border-radius:4px;white-space:nowrap}
+.status.red{background:var(--red-bg);color:var(--red)}.status.orange{background:var(--orange-bg);color:var(--orange)}.status.green{background:var(--green-bg);color:var(--green)}.status.done{background:var(--grey-bg);color:var(--muted)}
+.actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.date{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:2px 4px;font:12px var(--f-mono);width:128px}
+.icon{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--muted)}
+.icon.on{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.icon.danger{color:var(--red)}
+.add{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:0 0 10px 10px}
+.form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.form input[type=text],.form input[type=url],.form select,.form input[type=date]{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;min-width:0}
+.form .grow{flex:1 1 220px}
+.btn{border:1px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+.btn.ghost{background:var(--surface);color:var(--fg);border-color:var(--line)}
+.note{padding:12px 14px;font-size:13px;color:var(--muted)}
+.empty{padding:28px 18px;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:20}
+.siteform{padding:12px 14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.siteform input,.siteform select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;width:100%}
+@media (max-width:900px){.main{grid-template-columns:1fr}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.rail-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.task{grid-template-columns:22px minmax(0,1fr)}.actions{grid-column:2;justify-content:flex-start}}
+@media (prefers-reduced-motion:no-preference){.task,.gate{transition:background .2s,border-color .2s}}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tab{border:0;background:transparent;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--sunk);color:var(--fg);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lbl{font-size:12px;color:var(--muted)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px}
+.chk input{width:auto}
+.siteform{border-bottom:1px solid var(--line);border-top:0}
+.title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pstatus{font:600 11px/1 var(--f-mono);padding:4px 7px;border-radius:4px;background:var(--green-bg);color:var(--green)}
+.pstatus.paused{background:var(--grey-bg);color:var(--muted)}
+.pstatus.done{background:var(--sunk);color:var(--ink)}
+.pstatus.archived{background:var(--grey-bg);color:var(--muted)}
+.head-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.head-actions .btn{padding:5px 10px;font-size:13px}
+.banner{padding:10px 18px;background:var(--grey-bg);border-bottom:1px solid var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:4px}
+.inline-form{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.inline-form input,.inline-form select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;min-width:0;flex:1 1 160px}
+.inline-form .grow{flex:3 1 260px}
+.closed{color:var(--green)}
+.cnt.grey{background:var(--grey-bg);color:var(--muted)}
+.status.paused{background:var(--grey-bg);color:var(--muted)}
+.task.paused{border-left-color:var(--grey)}
+.history{border-top:1px solid var(--line);padding:12px 18px}
+.history summary{cursor:pointer;font-weight:600;font-size:13px}
+.hist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
+.hist li{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;font-size:13px}
+@media (max-width:520px){.hist li{grid-template-columns:1fr;gap:0}.two{grid-template-columns:1fr}}
+</style>
+
+<div class="app">
+  <div class="top">
+    <h1>Реестр сайтов студии</h1>
+    <div class="legend">
+      <span><i class="dot red"></i>красный флаг или просрочено</span>
+      <span><i class="dot orange"></i>срок через 3 дня или меньше</span>
+      <span><i class="dot green"></i>в срок или выполнено</span>
+      <span><i class="dot grey"></i>проект на паузе</span>
+    </div>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="main">
+    <aside class="panel sites" aria-label="Проекты">
+      <div class="sites-head"><h3>Проекты</h3><button class="btn ghost" id="add-site-toggle" type="button">+ Проект</button></div>
+      <div class="tabs" id="site-tabs" role="tablist"></div>
+      <form class="siteform" id="site-form" hidden>
+        <input id="sf-name" type="text" placeholder="Домен, например example.com" required>
+        <input id="sf-client" type="text" placeholder="Заказчик студии">
+        <div class="two">
+          <select id="sf-level" aria-label="Уровень"><option value="A">Уровень A</option><option value="B" selected>Уровень B</option><option value="C">Уровень C</option></select>
+          <input id="sf-platform" type="text" placeholder="Платформа" value="Webflow" aria-label="Платформа">
+        </div>
+        <input id="sf-segment" type="text" placeholder="Сегмент и рынок, например люкс, США">
+        <label class="lbl" for="sf-start">Дата старта</label>
+        <input id="sf-start" type="date">
+        <label class="chk"><input id="sf-template" type="checkbox" checked> Добавить типовые задачи по гейтам</label>
+        <button class="btn" type="submit">Добавить проект</button>
+      </form>
+      <div id="site-list"><div class="note">Загружаем проекты…</div></div>
+    </aside>
+    <section class="panel site" id="site" aria-live="polite"><div class="empty">Выберите проект слева.</div></section>
+  </div>
+  <p class="muted" id="conn" style="margin:0;font-size:12px"></p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  const FW = {
+    1:{name:"Фреймворк 1 · Техническая оптимизация", gates:["Сайт принят","Аудит принят","Объём согласован","Готово к публикации","Сдача","Стабильность"]},
+    2:{name:"Фреймворк 2 · SEO-продвижение", gates:["Сайт в продвижении","Семантика утверждена","Структура запущена","Контент и AI","Первый результат","Ежемесячный цикл"]}
+  };
+  const TEMPLATE=[
+    [1,0,"Доступы от студии: CMS, хостинг видео, Search Console","Менеджер",2],[1,0,"Резервная копия сайта","Тех. специалист",3],
+    [1,1,"Замеры: главная + 5 страниц, телефон и компьютер","Тех. специалист",7],[1,1,"Обход адресов и чек-лист аудита","SEO-специалист",7],[1,1,"Отчёт аудита для студии","Менеджер",9],
+    [1,2,"Студия утвердила план задач","Студия",14],[1,2,"Материалы и решения от студии для P1","Студия",14],
+    [1,3,"Все задачи P1 на тестовой версии","Тех. специалист",28],[1,3,"Проверка гейта 3 по критериям","Проверяющий",30],
+    [1,4,"Повторные замеры и отчёт «было / стало»","Менеджер",33],[1,5,"Контроль через 30 дней","Проверяющий",63],
+    [2,0,"Уровень, сегмент и точка отсчёта","Аналитик",28],[2,1,"Семантическое ядро","SEO-специалист",35],[2,1,"Ядро утверждено","Студия",40],
+    [2,2,"Страницы приоритета 1","Автор контента",56],[2,3,"Контент-план и AI-готовность","SEO-специалист",70],[2,4,"Отчёт за 90 дней","Аналитик",146]
+  ];
+  const OWNERS=["Менеджер","Тех. специалист","SEO-специалист","Автор контента","Аналитик","Проверяющий","Студия"];
+  const PSTATUS={active:"В работе",paused:"На паузе",done:"Завершён",archived:"Архив"};
+  const ACTIONS={done:"закрыл(а) задачу",reopened:"вернул(а) в работу задачу",flag:"поставил(а) флаг",unflag:"снял(а) флаг",due:"изменил(а) срок",created:"добавил(а) задачу",deleted:"удалил(а) задачу",
+    p_created:"создал(а) проект",p_paused:"поставил(а) проект на паузу",p_active:"вернул(а) проект в работу",p_done:"завершил(а) проект",p_archived:"отправил(а) проект в архив",p_edited:"изменил(а) карточку проекта"};
+  const RANK={red:3,orange:2,green:1,paused:0,done:0};
+  let db=null,user=null,me=null,names={},asked=new Set();
+  let sites=[],tasks=[],history=[],selected=null,filter="all",tab="active",sitesLoaded=false,tasksLoaded=false,pendingDelete=null,editing=false,pausing=false;
+  try{ selected=localStorage.getItem("crm-site"); tab=localStorage.getItem("crm-tab")||"active"; }catch(e){}
+
+  const $=id=>document.getElementById(id);
+  function h(tag,attrs,...kids){const e=document.createElement(tag);for(const k in (attrs||{})){const v=attrs[k];if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v);}for(const c of kids.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(String(c)));}return e;}
+  function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200);}
+  function today(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+  function iso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+  function parse(s){if(!s)return null;const [y,m,d]=s.slice(0,10).split("-").map(Number);return new Date(y,m-1,d);}
+  function daysLeft(s){const d=parse(s);if(!d)return null;return Math.round((d-today())/864e5);}
+  function fmtDate(s){const d=parse(s);return d?d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}):"";}
+  function fmtStamp(s){if(!s)return "";if(s.length<=10)return fmtDate(s);const d=new Date(s);return d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+", "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});}
+  function who(id){if(!id)return "";if(id===me)return "вы";return names[id]||"участник";}
+  const siteOf=t=>sites.find(s=>s.id===t.site);
+  const pstat=s=>(s&&s.status)||"active";
+  function status(t){
+    if(t.done) return {c:"done",label:"Выполнено"};
+    const s=siteOf(t);
+    if(s&&pstat(s)!=="active") return {c:"paused",label:PSTATUS[pstat(s)]};
+    const n=daysLeft(t.due);
+    if(t.flag) return {c:"red",label:n!=null&&n<0?`Флаг · просрочено ${-n} дн.`:"Красный флаг"};
+    if(n!=null&&n<0) return {c:"red",label:`Просрочено ${-n} дн.`};
+    if(n!=null&&n<=3) return {c:"orange",label:n===0?"Срок сегодня":`Через ${n} дн.`};
+    return {c:"green",label:n==null?"Без срока":`В срок · ${n} дн.`};
+  }
+  function worst(list){let w=null;for(const t of list){const c=status(t).c;if(!w||RANK[c]>RANK[w])w=c;}return w;}
+  function gateState(list){if(!list.length)return "empty";if(list.every(t=>t.done))return "done";const w=worst(list.filter(t=>!t.done));return w==="paused"?"empty":w;}
+  const siteTasks=id=>tasks.filter(t=>t.site===id);
+  function currentGate(st,fw){for(let g=0;g<6;g++){const l=st.filter(t=>t.fw===fw&&t.gate===g);if(l.length&&!l.every(t=>t.done))return g;}return null;}
+
+  async function write(fn,okMsg){
+    try{await fn();if(okMsg)toast(okMsg);return true;}
+    catch(e){toast(e&&e.code==="permission_denied"?"Нет прав на изменение: попросите владельца дать доступ к редактированию":"Не удалось сохранить: "+(e&&e.message||"ошибка соединения"));return false;}
+  }
+  function log(site,action,extra){if(!db)return;db.collection("history").add({site,action,by:me||"",at:new Date().toISOString(),...extra}).catch(()=>{});}
+
+  function resolveNames(){
+    if(!user)return;
+    const ids=new Set();for(const t of tasks)if(t.doneBy)ids.add(t.doneBy);for(const e of history)if(e.by)ids.add(e.by);for(const s of sites){if(s.pausedBy)ids.add(s.pausedBy);if(s.createdBy)ids.add(s.createdBy);}
+    const need=[...ids].filter(id=>!asked.has(id));if(!need.length)return;need.forEach(id=>asked.add(id));
+    user.profiles(need).then(ps=>{for(const id of need){names[id]=(ps&&ps[id]&&ps[id].name)||"";}render();}).catch(()=>{});
+  }
+
+  function renderTiles(){
+    const act=new Set(sites.filter(s=>pstat(s)==="active").map(s=>s.id));
+    const open=tasks.filter(t=>!t.done&&act.has(t.site));
+    const red=open.filter(t=>status(t).c==="red").length,orange=open.filter(t=>status(t).c==="orange").length;
+    const paused=sites.filter(s=>pstat(s)==="paused").length;
+    const all=tasks.filter(t=>act.has(t.site)),done=all.filter(t=>t.done).length,pct=all.length?Math.round(done/all.length*100):0;
+    const tile=(cls,num,label,fn)=>h("button",{class:"tile "+cls,type:"button",onclick:fn},h("b",{text:num}),h("span",{text:label}));
+    $("tiles").replaceChildren(
+      tile("",String(act.size),paused?`проектов в работе · ${paused} на паузе`:"проектов в работе",()=>{tab="active";render();}),
+      tile("red",String(red),"красных задач",()=>{filter="red";render();}),
+      tile("orange",String(orange),"срок через 3 дня или меньше",()=>{filter="orange";render();}),
+      tile("green",pct+"%",`выполнено в активных (${done} из ${all.length})`,()=>{filter="done";render();}));
+  }
+
+  function renderSites(){
+    const counts={active:0,paused:0,done:0,archived:0};for(const s of sites)counts[pstat(s)]++;
+    $("site-tabs").replaceChildren(...["active","paused","done","archived","all"].map(k=>h("button",{class:"tab",type:"button",role:"tab","aria-selected":String(tab===k),onclick:()=>{tab=k;try{localStorage.setItem("crm-tab",k);}catch(e){}render();}},
+      k==="all"?"Все":PSTATUS[k],h("span",{class:"mono",text:" "+(k==="all"?sites.length:counts[k])}))));
+    const box=$("site-list");if(!sitesLoaded)return;
+    const list=sites.filter(s=>tab==="all"||pstat(s)===tab);
+    if(!list.length){box.replaceChildren(h("div",{class:"note",text:sites.length?"В этом разделе проектов нет.":"Проектов пока нет. Добавьте первый кнопкой «+ Проект»."}));return;}
+    const sorted=[...list].sort((a,b)=>{const wa=RANK[worst(siteTasks(a.id).filter(t=>!t.done))||"done"],wb=RANK[worst(siteTasks(b.id).filter(t=>!t.done))||"done"];return wb-wa||String(a.name).localeCompare(String(b.name));});
+    box.replaceChildren(...sorted.map(s=>{
+      const st=siteTasks(s.id),open=st.filter(t=>!t.done),ps=pstat(s);
+      const w=ps!=="active"?"grey":(worst(open)||"green");
+      const r=ps==="active"?open.filter(t=>status(t).c==="red").length:0,o=ps==="active"?open.filter(t=>status(t).c==="orange").length:0;
+      const g1=currentGate(st,1),g2=currentGate(st,2);
+      return h("button",{class:"site-item",type:"button","aria-current":String(s.id===selected),onclick:()=>{selected=s.id;editing=false;pausing=false;try{localStorage.setItem("crm-site",s.id);}catch(e){}render();}},
+        h("i",{class:"dot "+w}),h("span",{class:"nm",text:s.name||"Без названия"}),
+        h("span",{class:"counts"},ps!=="active"?h("span",{class:"cnt grey",text:PSTATUS[ps]}):null,r?h("span",{class:"cnt red",text:String(r)}):null,o?h("span",{class:"cnt orange",text:String(o)}):null),
+        h("span",{class:"sub",text:`Уровень ${s.level||"—"} · Ф1: ${g1==null?"готово":"гейт "+g1} · Ф2: ${g2==null?"готово":"гейт "+g2}`}));
+    }));
+  }
+
+  function setDone(t,val){
+    const data=val?{done:true,doneAt:new Date().toISOString(),doneBy:me||""}:{done:false,doneAt:"",doneBy:""};
+    write(()=>db.doc("tasks/"+t.id).update(data)).then(ok=>{if(ok)log(t.site,val?"done":"reopened",{task:t.id,title:t.title});});
+  }
+  function taskRow(t){
+    const s=status(t),isDel=pendingDelete===t.id;
+    const closed=t.done&&t.doneAt?h("span",{class:"closed",text:"Закрыто "+fmtStamp(t.doneAt)+(t.doneBy?" · "+who(t.doneBy):"")}):null;
+    return h("div",{class:"task "+s.c},
+      h("input",{type:"checkbox",checked:t.done,"aria-label":"Выполнено: "+t.title,onchange:e=>setDone(t,e.target.checked)}),
+      h("div",{class:"body"},h("span",{class:"title",text:t.title}),h("span",{class:"info"},h("span",{class:"status "+s.c,text:s.label}),h("span",{text:t.owner||"Без ответственного"}),closed,t.note?h("span",{text:t.note}):null)),
+      h("div",{class:"actions"},
+        h("input",{class:"date",type:"date",value:t.due||"","aria-label":"Срок",onchange:e=>{const v=e.target.value;write(()=>db.doc("tasks/"+t.id).update({due:v})).then(ok=>{if(ok)log(t.site,"due",{task:t.id,title:t.title,detail:v?fmtDate(v):"без срока"});});}}),
+        h("button",{class:"icon"+(t.flag?" on":""),type:"button","aria-pressed":String(!!t.flag),title:"Красный флаг",onclick:()=>write(()=>db.doc("tasks/"+t.id).update({flag:!t.flag})).then(ok=>{if(ok)log(t.site,t.flag?"unflag":"flag",{task:t.id,title:t.title});})},t.flag?"Флаг ✕":"Флаг"),
+        isDel?h("button",{class:"icon danger",type:"button",onclick:()=>{pendingDelete=null;write(()=>db.doc("tasks/"+t.id).delete(),"Задача удалена").then(ok=>{if(ok)log(t.site,"deleted",{task:t.id,title:t.title});});}},"Удалить?")
+             :h("button",{class:"icon",type:"button","aria-label":"Удалить задачу",onclick:()=>{pendingDelete=t.id;render();setTimeout(()=>{if(pendingDelete===t.id){pendingDelete=null;render();}},4000);}},"×")));
+  }
+
+  function setProjectStatus(s,st,extra){
+    const data={status:st,statusAt:new Date().toISOString(),statusBy:me||"",...(extra||{})};
+    if(st==="paused"){data.pausedAt=data.statusAt;data.pausedBy=me||"";}
+    write(()=>db.doc("sites/"+s.id).update(data),"Статус: "+PSTATUS[st]).then(ok=>{if(ok)log(s.id,"p_"+st,{title:s.name,detail:extra&&extra.pauseNote||""});});
+  }
+
+  function projectHead(s,st){
+    const ps=pstat(s);
+    const btns=[];
+    if(ps==="active"){btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=!pausing;editing=false;render();}},"Пауза"),h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"done")},"Завершить"));}
+    else{btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"active",{pauseNote:""})},"Вернуть в работу"));}
+    if(ps!=="archived")btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>setProjectStatus(s,"archived")},"В архив"));
+    btns.push(h("button",{class:"btn ghost",type:"button",onclick:()=>{editing=!editing;pausing=false;render();}},editing?"Закрыть":"Изменить"));
+    const head=h("div",{class:"site-head"},
+      h("div",{style:"min-width:0"},h("div",{class:"title-row"},h("h2",{text:s.name}),h("span",{class:"pstatus "+ps,text:PSTATUS[ps]})),h("div",{class:"site-meta"},
+        s.client?h("span",{text:"Заказчик: "+s.client}):null,h("span",{text:"Уровень "+(s.level||"—")}),s.platform?h("span",{text:s.platform}):null,s.segment?h("span",{text:s.segment}):null,
+        s.startDate?h("span",{text:"Старт "+fmtDate(s.startDate)}):null,
+        s.url?h("a",{href:s.url,target:"_blank",rel:"noopener",text:"открыть сайт"}):null)),
+      h("div",{class:"head-actions"},h("span",{class:"muted mono",text:`${st.filter(t=>t.done).length}/${st.length} задач`}),...btns));
+    const parts=[head];
+    if(ps==="paused")parts.push(h("div",{class:"banner"},h("b",{text:"На паузе"}),` с ${fmtStamp(s.pausedAt)}`+(s.pausedBy?` · ${who(s.pausedBy)}`:"")+(s.pauseNote?` · причина: `:""),s.pauseNote?h("span",{text:s.pauseNote}):null,h("span",{class:"muted",text:" Сроки задач не горят красным и оранжевым, пока проект на паузе."})));
+    if(pausing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();const note=$("pause-note").value.trim();pausing=false;setProjectStatus(s,"paused",{pauseNote:note});}},
+      h("input",{id:"pause-note",type:"text",class:"grow",placeholder:"Причина паузы, например ждём материалы от заказчика","aria-label":"Причина паузы"}),h("button",{class:"btn",type:"submit"},"Поставить на паузу"),h("button",{class:"btn ghost",type:"button",onclick:()=>{pausing=false;render();}},"Отмена")));
+    if(editing)parts.push(h("form",{class:"inline-form",onsubmit:e=>{e.preventDefault();const data={name:$("pe-name").value.trim()||s.name,url:$("pe-url").value.trim(),client:$("pe-client").value.trim(),level:$("pe-level").value,platform:$("pe-platform").value.trim(),segment:$("pe-segment").value.trim(),startDate:$("pe-start").value};
+        editing=false;write(()=>db.doc("sites/"+s.id).update(data),"Карточка сохранена").then(ok=>{if(ok)log(s.id,"p_edited",{title:data.name});});}},
+      h("input",{id:"pe-name",type:"text",value:s.name||"","aria-label":"Название"}),h("input",{id:"pe-url",type:"url",value:s.url||"",placeholder:"https://","aria-label":"Адрес сайта"}),
+      h("input",{id:"pe-client",type:"text",value:s.client||"",placeholder:"Заказчик","aria-label":"Заказчик"}),
+      h("select",{id:"pe-level","aria-label":"Уровень"},...["A","B","C"].map(l=>h("option",{value:l,selected:(s.level||"B")===l},"Уровень "+l))),
+      h("input",{id:"pe-platform",type:"text",value:s.platform||"",placeholder:"Платформа","aria-label":"Платформа"}),h("input",{id:"pe-segment",type:"text",value:s.segment||"",placeholder:"Сегмент","aria-label":"Сегмент"}),
+      h("input",{id:"pe-start",type:"date",value:s.startDate||"","aria-label":"Дата старта"}),h("button",{class:"btn",type:"submit"},"Сохранить")));
+    return parts;
+  }
+
+  function historyBlock(s){
+    const ev=history.filter(e=>e.site===s.id).slice(0,40);
+    return h("details",{class:"history"},h("summary",null,"История проекта ",h("span",{class:"mono muted",text:`(${ev.length}${ev.length===40?"+":""})`})),
+      ev.length?h("ol",{class:"hist"},...ev.map(e=>h("li",null,h("span",{class:"mono muted",text:fmtStamp(e.at)}),h("span",null,h("b",{text:(w=>w.charAt(0).toUpperCase()+w.slice(1))(e.by?who(e.by):"кто-то")})," "+(ACTIONS[e.action]||e.action)+(e.title&&!String(e.action).startsWith("p_")?" «":" "),e.title&&!String(e.action).startsWith("p_")?h("span",{text:e.title}):null,e.title&&!String(e.action).startsWith("p_")?"»":"",e.detail?h("span",{class:"muted",text:" · "+e.detail}):null))))
+        :h("p",{class:"note",text:"Здесь появятся действия команды: закрытие задач, флаги, сроки, пауза проекта."}));
+  }
+
+  function renderSite(){
+    const box=$("site");
+    const pool=sites.filter(s=>tab==="all"||pstat(s)===tab);
+    const s=sites.find(x=>x.id===selected)||pool[0]||sites[0];
+    if(!s){box.replaceChildren(h("div",{class:"empty",text:sitesLoaded?"Добавьте проект, чтобы начать.":"Загружаем…"}));return;}
+    selected=s.id;
+    const st=siteTasks(s.id);
+    const rails=h("div",{class:"rails"},...[1,2].map(fw=>{
+      const cur=currentGate(st,fw);
+      return h("div",{class:"rail"},h("h3",{text:FW[fw].name}),h("div",{class:"rail-row"},...FW[fw].gates.map((name,g)=>{
+        const l=st.filter(t=>t.fw===fw&&t.gate===g),gs=gateState(l);
+        return h("button",{class:"gate "+gs+(cur===g?" current":""),type:"button",onclick:()=>{const el=document.getElementById(`g-${fw}-${g}`);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}},
+          h("span",{class:"g",text:"Гейт "+g}),h("span",{class:"t",text:name}),h("span",{class:"p",text:l.length?`${l.filter(t=>t.done).length}/${l.length}`:"нет задач"}));
+      })));
+    }));
+    const chips=[["all","Все"],["red","Красные"],["orange","Скоро срок"],["open","Открытые"],["done","Выполненные"]];
+    const toolbar=h("div",{class:"toolbar"},...chips.map(([k,l])=>h("button",{class:"chip",type:"button","aria-pressed":String(filter===k),onclick:()=>{filter=k;render();}},k==="red"?h("i",{class:"dot red"}):k==="orange"?h("i",{class:"dot orange"}):null,l)));
+    const pass=t=>{const c=status(t).c;return filter==="all"||(filter==="red"&&c==="red")||(filter==="orange"&&c==="orange")||(filter==="open"&&!t.done)||(filter==="done"&&t.done);};
+    const groups=h("div",{class:"groups"});let shown=0;
+    for(const fw of [1,2]){
+      const fwTasks=st.filter(t=>t.fw===fw&&pass(t));if(!fwTasks.length)continue;
+      groups.append(h("div",{class:"fw-title",text:FW[fw].name}));
+      for(let g=0;g<6;g++){
+        const l=fwTasks.filter(t=>t.gate===g).sort((a,b)=>(a.done-b.done)||RANK[status(b).c]-RANK[status(a).c]||String(a.due||"9").localeCompare(String(b.due||"9")));
+        if(!l.length)continue;
+        const all=st.filter(t=>t.fw===fw&&t.gate===g),gs=gateState(all);shown+=l.length;
+        groups.append(h("div",{class:"group",id:`g-${fw}-${g}`},h("div",{class:"group-head"},h("i",{class:"dot "+(gs==="done"?"green":gs==="empty"?"grey":gs)}),h("h3",{text:`Гейт ${g}. ${FW[fw].gates[g]}`}),h("span",{class:"p",text:`${all.filter(t=>t.done).length}/${all.length}`})),...l.map(taskRow)));
+      }
+    }
+    if(!shown)groups.append(h("div",{class:"empty",text:tasksLoaded?(st.length?"Под этот фильтр задач нет.":"Задач пока нет. Добавьте первую ниже."):"Загружаем задачи…"}));
+    const add=h("form",{class:"add",onsubmit:e=>{e.preventDefault();
+      const title=$("nt-title").value.trim();if(!title){$("nt-title").focus();return;}
+      const data={site:s.id,fw:Number($("nt-fw").value),gate:Number($("nt-gate").value),title,owner:$("nt-owner").value,due:$("nt-due").value,flag:$("nt-flag").checked,done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()};
+      write(async()=>{const ref=await db.collection("tasks").add(data);$("nt-title").value="";$("nt-flag").checked=false;log(s.id,"created",{task:ref.id,title});},"Задача добавлена");}},
+      h("h3",{text:"Новая задача"}),
+      h("div",{class:"form"},
+        h("input",{id:"nt-title",class:"grow",type:"text",placeholder:"Что сделать","aria-label":"Название задачи"}),
+        h("select",{id:"nt-fw","aria-label":"Фреймворк",onchange:()=>fillGates()},h("option",{value:"1"},"Ф1 · оптимизация"),h("option",{value:"2"},"Ф2 · продвижение")),
+        h("select",{id:"nt-gate","aria-label":"Гейт"}),
+        h("select",{id:"nt-owner","aria-label":"Ответственный"},...OWNERS.map(o=>h("option",{value:o},o))),
+        h("input",{id:"nt-due",type:"date","aria-label":"Срок"}),
+        h("label",{class:"chip"},h("input",{id:"nt-flag",type:"checkbox"}),"Красный флаг"),
+        h("button",{class:"btn",type:"submit"},"Добавить")));
+    box.replaceChildren(...projectHead(s,st),rails,toolbar,groups,historyBlock(s),add);
+    fillGates();
+  }
+  function fillGates(){const fw=Number(($("nt-fw")||{}).value||1),sel=$("nt-gate");if(!sel)return;const keep=sel.value;sel.replaceChildren(...FW[fw].gates.map((n,g)=>h("option",{value:String(g)},`Гейт ${g}. ${n}`)));if(keep&&Number(keep)<6)sel.value=keep;}
+
+  function render(){
+    const a=document.activeElement,keepId=a&&a.id,keepVal=keepId&&a.value;
+    const hist=document.querySelector(".history"),histOpen=hist&&hist.open;
+    renderTiles();renderSites();renderSite();
+    if(histOpen){const n=document.querySelector(".history");if(n)n.open=true;}
+    if(keepId&&$(keepId)){const el=$(keepId);if(el.type!=="checkbox"&&keepVal!=null)el.value=keepVal;el.focus();}
+    resolveNames();
+  }
+
+  $("add-site-toggle").addEventListener("click",()=>{const f=$("site-form");f.hidden=!f.hidden;if(!f.hidden){$("sf-start").value=iso(today());$("sf-name").focus();}});
+  $("site-form").addEventListener("submit",e=>{e.preventDefault();if(!db){toast("Хранилище недоступно: войдите в claude.ai");return;}
+    const name=$("sf-name").value.trim();if(!name)return;
+    const start=$("sf-start").value||iso(today());
+    const data={name,url:/^https?:\/\//.test(name)?name:"https://"+name,client:$("sf-client").value.trim(),level:$("sf-level").value,platform:$("sf-platform").value.trim(),segment:$("sf-segment").value.trim(),startDate:start,status:"active",createdBy:me||"",createdAt:new Date().toISOString()};
+    const withTpl=$("sf-template").checked;
+    write(async()=>{
+      const ref=await db.collection("sites").add(data);
+      log(ref.id,"p_created",{title:name});
+      if(withTpl){const base=parse(start);for(const [fw,gate,title,owner,off] of TEMPLATE){const d=new Date(base);d.setDate(d.getDate()+off);await db.collection("tasks").add({site:ref.id,fw,gate,title,owner,due:iso(d),flag:false,done:false,note:"",doneAt:"",doneBy:"",createdBy:me||"",createdAt:new Date().toISOString()});}}
+      selected=ref.id;tab="active";$("site-form").reset();$("site-form").hidden=true;},"Проект добавлен");});
+
+  render();
+
+  // Локальный режим (вне claude.ai): данные хранятся только в этом браузере
+  function localDb(){
+    const KEY="crm-local-db-v1";const SEED={"sites": {"mosaicist": {"name": "mosaicist.com", "url": "https://mosaicist.com", "client": "Mosaicist – House of Mosaic Arts", "level": "A", "platform": "Webflow", "segment": "люкс, США", "status": "active", "startDate": "2026-11-10"}}, "tasks": {"mos-00": {"site": "mosaicist", "fw": 1, "gate": 0, "title": "Доступ к Webflow получен", "owner": "Менеджер", "due": "2026-11-11", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-01": {"site": "mosaicist", "fw": 1, "gate": 0, "title": "Доступ к хранилищу видео (Bunny)", "owner": "Менеджер", "due": "2026-11-14", "done": false, "flag": false, "note": "или студия загружает файлы сама", "doneAt": ""}, "mos-02": {"site": "mosaicist", "fw": 1, "gate": 0, "title": "Доступ к Google Search Console", "owner": "Менеджер", "due": "2026-11-14", "done": false, "flag": false, "note": "на сайте не подключена", "doneAt": ""}, "mos-03": {"site": "mosaicist", "fw": 1, "gate": 0, "title": "Резервная копия сайта перед изменениями", "owner": "Тех. специалист", "due": "2026-11-17", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-04": {"site": "mosaicist", "fw": 1, "gate": 0, "title": "Сайт заведён в реестр", "owner": "Менеджер", "due": "2026-11-13", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-05": {"site": "mosaicist", "fw": 1, "gate": 1, "title": "Замеры Lighthouse: главная + 5 страниц, телефон и компьютер", "owner": "Тех. специалист", "due": "2026-11-11", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-06": {"site": "mosaicist", "fw": 1, "gate": 1, "title": "Обход всех адресов и чек-лист аудита", "owner": "SEO-специалист", "due": "2026-11-11", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-07": {"site": "mosaicist", "fw": 1, "gate": 1, "title": "Приоритеты P1–P3 по находкам", "owner": "SEO-специалист", "due": "2026-11-11", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-08": {"site": "mosaicist", "fw": 1, "gate": 1, "title": "Отчёт аудита передан студии", "owner": "Менеджер", "due": "2026-11-12", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-09": {"site": "mosaicist", "fw": 1, "gate": 2, "title": "Студия утвердила план задач", "owner": "Студия", "due": "2026-11-15", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-10": {"site": "mosaicist", "fw": 1, "gate": 2, "title": "Исходники видео от заказчика", "owner": "Студия", "due": "2026-11-14", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-11": {"site": "mosaicist", "fw": 1, "gate": 2, "title": "Решение: основной адрес сайта (с www или без)", "owner": "Студия", "due": "2026-11-18", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-12": {"site": "mosaicist", "fw": 1, "gate": 2, "title": "Решение: длина главного видео (15–25 с)", "owner": "Студия", "due": "2026-11-18", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-13": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Вес главной 57 МБ: пережать главное видео", "owner": "Тех. специалист", "due": "2026-11-20", "done": false, "flag": true, "note": "красный флаг: > 10 МБ", "doneAt": ""}, "mos-14": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Видео виллы 142 МБ: загрузка только при прокрутке", "owner": "Тех. специалист", "due": "2026-11-20", "done": false, "flag": true, "note": "", "doneAt": ""}, "mos-15": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Заставка первого экрана без ленивой загрузки", "owner": "Тех. специалист", "due": "2026-11-20", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-16": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Перенос скриптов из head, плеер по клику", "owner": "Тех. специалист", "due": "2026-11-24", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-17": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Шрифты в WOFF2", "owner": "Тех. специалист", "due": "2026-11-24", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-18": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Два хоста отвечают 200: основной домен + редирект", "owner": "SEO-специалист", "due": "2026-11-21", "done": false, "flag": true, "note": "", "doneAt": ""}, "mos-19": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "sitemap.xml отдаёт 404: включить карту сайта", "owner": "SEO-специалист", "due": "2026-11-21", "done": false, "flag": true, "note": "", "doneAt": ""}, "mos-20": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Ссылки в подвале на www-версию", "owner": "SEO-специалист", "due": "2026-11-21", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-21": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Тестовая копия webflow.io в поиске", "owner": "SEO-специалист", "due": "2026-11-21", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-22": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Опечатка Carribbean и двойной дефис: адреса + 301", "owner": "SEO-специалист", "due": "2026-11-25", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-23": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Старые адреса проектов 404: редиректы 301", "owner": "SEO-специалист", "due": "2026-11-25", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-24": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "37 H1 на главной, кириллическая «С» в Catalogs", "owner": "SEO-специалист", "due": "2026-11-27", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-25": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Alt у всех изображений (0 из 544)", "owner": "Автор контента", "due": "2026-11-27", "done": false, "flag": true, "note": "", "doneAt": ""}, "mos-26": {"site": "mosaicist", "fw": 1, "gate": 3, "title": "Структурированные данные и llms.txt", "owner": "SEO-специалист", "due": "2026-11-28", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-27": {"site": "mosaicist", "fw": 1, "gate": 4, "title": "Повторные замеры на боевом сайте", "owner": "Тех. специалист", "due": "2026-12-03", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-28": {"site": "mosaicist", "fw": 1, "gate": 4, "title": "Отчёт «было / стало» для студии", "owner": "Менеджер", "due": "2026-12-04", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-29": {"site": "mosaicist", "fw": 1, "gate": 5, "title": "Контроль через 30 дней: регрессии и индексация", "owner": "Проверяющий", "due": "2027-01-05", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-30": {"site": "mosaicist", "fw": 2, "gate": 0, "title": "Уровень A, сегмент люкс, рынок США", "owner": "Менеджер", "due": "2026-11-12", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-31": {"site": "mosaicist", "fw": 2, "gate": 0, "title": "Точка отсчёта в Search Console", "owner": "Аналитик", "due": "2026-11-20", "done": false, "flag": false, "note": "ждёт доступа к Search Console", "doneAt": ""}, "mos-32": {"site": "mosaicist", "fw": 2, "gate": 0, "title": "Базовый тест ответов AI (ChatGPT, Gemini)", "owner": "Аналитик", "due": "2026-11-10", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-33": {"site": "mosaicist", "fw": 2, "gate": 1, "title": "Семантическое ядро: 269 запросов", "owner": "SEO-специалист", "due": "2026-11-12", "done": true, "flag": false, "note": "", "doneAt": "2026-11-11"}, "mos-34": {"site": "mosaicist", "fw": 2, "gate": 1, "title": "Ядро утверждено студией", "owner": "Студия", "due": "2026-11-20", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-35": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Страница /custom-pool-mosaics", "owner": "Автор контента", "due": "2026-12-05", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-36": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Страница стоимости и ценности", "owner": "Автор контента", "due": "2026-12-10", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-37": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Страница для архитекторов и застройщиков", "owner": "Автор контента", "due": "2026-12-12", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-38": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Тексты проектов 400–600 слов", "owner": "Автор контента", "due": "2026-12-15", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-39": {"site": "mosaicist", "fw": 2, "gate": 2, "title": "Наполнить Public Art и Interior Spaces", "owner": "Автор контента", "due": "2026-12-19", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-40": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "Блог в Webflow CMS", "owner": "Тех. специалист", "due": "2026-12-08", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-41": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "Первые 3 статьи по плану", "owner": "Автор контента", "due": "2026-12-20", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-42": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "FAQ и блок фактов о компании", "owner": "Автор контента", "due": "2026-12-15", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-43": {"site": "mosaicist", "fw": 2, "gate": 3, "title": "Google Business Profile: адреса в каталогах расходятся", "owner": "Менеджер", "due": "2026-12-10", "done": false, "flag": false, "note": "", "doneAt": ""}, "mos-44": {"site": "mosaicist", "fw": 2, "gate": 4, "title": "Отчёт за 90 дней", "owner": "Аналитик", "due": "2027-03-05", "done": false, "flag": false, "note": "", "doneAt": ""}}, "history": {}};
+    let data;try{data=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){}
+    if(!data)data=JSON.parse(JSON.stringify(SEED));
+    const subs=[];
+    const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}subs.forEach(f=>f());};
+    const snap=(name,q)=>{let arr=Object.entries(data[name]||{}).map(([id,v])=>({id,v}));
+      if(q.ob)arr.sort((a,b)=>String(a.v[q.ob]||"").localeCompare(String(b.v[q.ob]||""))*(q.dir==="desc"?-1:1));if(q.lim)arr=arr.slice(0,q.lim);
+      return {docs:arr.map(x=>({id:x.id,exists:true,data:()=>x.v})),metadata:{fromCache:false,hasPendingWrites:false}};};
+    const query=(name,q)=>({orderBy:(f,d)=>query(name,{...q,ob:f,dir:d}),limit:n=>query(name,{...q,lim:n}),
+      onSnapshot:cb=>{const f=()=>cb(snap(name,q));subs.push(f);setTimeout(f,0);return()=>{const i=subs.indexOf(f);if(i>=0)subs.splice(i,1);};},
+      add:async v=>{const id=Math.random().toString(36).slice(2,12);(data[name]=data[name]||{})[id]=v;save();return {id};}});
+    return {collection:name=>query(name,{}),doc:path=>{const [c,id]=path.split("/");return {
+      update:async v=>{data[c][id]={...data[c][id],...v};save();},delete:async()=>{delete data[c][id];save();}};}};
+  }
+  const LOCAL=!(window.claude&&window.claude.use);
+  if(LOCAL)$("conn").textContent="Локальный режим: изменения сохраняются только в этом браузере. Общий трекер команды открывается на claude.ai.";
+  const use=n=>LOCAL?Promise.resolve(n==="db"?localDb():null):window.claude.use(n);
+  use("user").then(async u=>{user=u;if(u){try{me=await u.id();}catch(e){}render();}});
+  use("db").then(d=>{
+    db=d;
+    if(!db){$("conn").textContent="Хранилище недоступно: войдите в claude.ai под своим аккаунтом, чтобы видеть и отмечать задачи.";sitesLoaded=tasksLoaded=true;render();return;}
+    const timer=setTimeout(()=>{$("conn").textContent="Данные пока не загрузились. Проверьте соединение — страница обновится сама, когда хранилище ответит.";},10000);
+    const settle=meta=>{if(!meta.fromCache){clearTimeout(timer);if(!LOCAL)$("conn").textContent="";}};
+    const onErr=e=>{clearTimeout(timer);$("conn").textContent="Связь с хранилищем прервалась: "+(e&&e.message||"ошибка")+". Перезагрузите страницу.";};
+    db.collection("sites").onSnapshot(snap=>{sites=snap.docs.map(d=>({id:d.id,...d.data()}));sitesLoaded=true;settle(snap.metadata);render();},onErr);
+    db.collection("tasks").onSnapshot(snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()}));tasksLoaded=true;settle(snap.metadata);render();},onErr);
+    db.collection("history").orderBy("at","desc").limit(500).onSnapshot(snap=>{history=snap.docs.map(d=>({id:d.id,...d.data()}));render();},onErr);
+  });
+})();
+</script>
